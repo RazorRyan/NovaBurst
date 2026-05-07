@@ -20,10 +20,13 @@ import {
 import { hasReachedShield } from "../utils/collision";
 import { GAME_CONFIG, getDifficultyState, SHIELD_COLORS } from "../utils/difficulty";
 
+const DEV_TEST_INVINCIBLE = __DEV__;
+
 type SimState = {
   elapsedMs: number;
   spawnTimerMs: number;
   uiTimerMs: number;
+  snapshotTimerMs: number;
   invincibilityMs: number;
   ballId: number;
   particleId: number;
@@ -37,6 +40,9 @@ type SimState = {
   damageFlash: number;
   shieldPulse: number;
   switchFlash: number;
+  lastSelectionHapticMs: number;
+  lastImpactHapticMs: number;
+  lastErrorHapticMs: number;
 };
 
 const STAR_COUNT = 32;
@@ -56,6 +62,7 @@ function createSimState(): SimState {
     elapsedMs: 0,
     spawnTimerMs: 0,
     uiTimerMs: 0,
+    snapshotTimerMs: 999,
     invincibilityMs: 0,
     ballId: 0,
     particleId: 0,
@@ -69,6 +76,9 @@ function createSimState(): SimState {
     damageFlash: 0,
     shieldPulse: 0,
     switchFlash: 0,
+    lastSelectionHapticMs: -9999,
+    lastImpactHapticMs: -9999,
+    lastErrorHapticMs: -9999,
   };
 }
 
@@ -99,6 +109,7 @@ function createSnapshot(width: number, height: number, stars: Star[]): GameSnaps
 export function useGameLoop() {
   const { width, height } = useWindowDimensions();
   const [restartSeed, setRestartSeed] = useState(0);
+  const [testInvincible, setTestInvincible] = useState(DEV_TEST_INVINCIBLE);
   const starsRef = useRef<Star[]>([]);
   const simRef = useRef<SimState>(createSimState());
   const lastFrameRef = useRef(0);
@@ -113,7 +124,6 @@ export function useGameLoop() {
   const health = useGameStore((state) => state.health);
   const highScore = useGameStore((state) => state.highScore);
   const bestCombo = useGameStore((state) => state.bestCombo);
-  const totalRuns = useGameStore((state) => state.totalRuns);
   const gameState = useGameStore((state) => state.gameState);
 
   const initialize = useCallback(() => {
@@ -159,6 +169,7 @@ export function useGameLoop() {
         sim.elapsedMs += deltaMs;
         sim.spawnTimerMs += deltaMs;
         sim.uiTimerMs += deltaMs;
+        sim.snapshotTimerMs += deltaMs;
         sim.scoreAccumulator +=
           (deltaMs / 1000) *
           GAME_CONFIG.baseScorePerSecond *
@@ -202,17 +213,25 @@ export function useGameLoop() {
             nextCombo += 1;
             sim.scoreAccumulator += GAME_CONFIG.absorbScore * Math.max(1, nextCombo);
             sim.shieldPulse = 1;
-            emitParticles(sim.particles, ball.x, ball.y, ball.colorKey, 10, sim);
+            emitParticles(sim.particles, ball.x, ball.y, ball.colorKey, 10, sim, sim.balls.length);
             emitPopup(sim.scorePopups, ball.x, ball.y, `+${GAME_CONFIG.absorbScore}`, sim);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+            if (sim.elapsedMs - sim.lastImpactHapticMs >= 70) {
+              sim.lastImpactHapticMs = sim.elapsedMs;
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+            }
           } else if (canTakeDamage) {
-            nextHealth -= 1;
+            if (!testInvincible) {
+              nextHealth -= 1;
+            }
             nextCombo = 0;
             sim.invincibilityMs = GAME_CONFIG.invincibilityMs;
             sim.damageFlash = 1;
-            emitParticles(sim.particles, ball.x, ball.y, ball.colorKey, 14, sim);
+            emitParticles(sim.particles, ball.x, ball.y, ball.colorKey, 14, sim, sim.balls.length);
             triggerShake(shakeX, shakeY);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
+            if (sim.elapsedMs - sim.lastErrorHapticMs >= 160) {
+              sim.lastErrorHapticMs = sim.elapsedMs;
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
+            }
           }
         }
 
@@ -230,7 +249,7 @@ export function useGameLoop() {
             life: particle.life - deltaMs,
           }))
           .filter((particle) => particle.life > 0)
-          .slice(-90);
+          .slice(-getParticleBudget(sim.balls.length));
 
         sim.scorePopups = sim.scorePopups
           .map((popup) => ({
@@ -239,7 +258,7 @@ export function useGameLoop() {
             life: popup.life - deltaMs,
           }))
           .filter((popup) => popup.life > 0)
-          .slice(-8);
+          .slice(-getScorePopupBudget(sim.balls.length));
 
         if (nextCombo !== store.combo) {
           store.setCombo(nextCombo);
@@ -254,10 +273,12 @@ export function useGameLoop() {
           }
         }
 
-        if (sim.uiTimerMs >= 90 && store.gameState === "running") {
+        if (sim.uiTimerMs >= 120 && store.gameState === "running") {
           sim.uiTimerMs = 0;
           store.setScore(Math.round(sim.scoreAccumulator));
         }
+      } else {
+        sim.snapshotTimerMs += deltaMs;
       }
 
       const invinciblePulse =
@@ -265,27 +286,34 @@ export function useGameLoop() {
       const lowHealthPulse =
         store.health <= 1 ? 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(sim.elapsedMs / 160)) : 0;
 
-      setSnapshot({
-        width,
-        height,
-        center,
-        elapsedMs: sim.elapsedMs,
-        availableColorCount: difficulty.colorCount,
-        shieldRadius,
-        coreRadius: GAME_CONFIG.coreRadius,
-        activeColor,
-        previousActiveColor,
-        activeColorIndex: sim.activeColorIndex,
-        balls: sim.balls.map((ball) => ({ ...ball })),
-        particles: sim.particles.map((particle) => ({ ...particle })),
-        scorePopups: sim.scorePopups.map((popup) => ({ ...popup })),
-        stars: starsRef.current,
-        damageFlash: sim.damageFlash,
-        shieldPulse: sim.shieldPulse,
-        switchFlash: sim.switchFlash,
-        invinciblePulse,
-        lowHealthPulse,
-      });
+      const renderIntervalMs = getRenderIntervalMs(sim.balls.length, sim.particles.length);
+      const shouldPublishSnapshot =
+        sim.snapshotTimerMs >= renderIntervalMs ||
+        (store.gameState !== "running" && sim.snapshotTimerMs >= 32);
+      if (shouldPublishSnapshot) {
+        sim.snapshotTimerMs = 0;
+        setSnapshot({
+          width,
+          height,
+          center,
+          elapsedMs: sim.elapsedMs,
+          availableColorCount: difficulty.colorCount,
+          shieldRadius,
+          coreRadius: GAME_CONFIG.coreRadius,
+          activeColor,
+          previousActiveColor,
+          activeColorIndex: sim.activeColorIndex,
+          balls: sim.balls.map(cloneBallEntity),
+          particles: sim.particles.map(cloneParticleEntity),
+          scorePopups: sim.scorePopups.map(cloneScorePopup),
+          stars: starsRef.current,
+          damageFlash: sim.damageFlash,
+          shieldPulse: sim.shieldPulse,
+          switchFlash: sim.switchFlash,
+          invinciblePulse,
+          lowHealthPulse,
+        });
+      }
 
       frameId = requestAnimationFrame(frame);
     };
@@ -315,7 +343,11 @@ export function useGameLoop() {
     sim.activeColorIndex = nextColorIndex;
     sim.shieldPulse = 1.15;
     sim.switchFlash = 1;
-    Haptics.selectionAsync().catch(() => undefined);
+    sim.snapshotTimerMs = Number.MAX_SAFE_INTEGER;
+    if (sim.elapsedMs - sim.lastSelectionHapticMs >= 45) {
+      sim.lastSelectionHapticMs = sim.elapsedMs;
+      Haptics.selectionAsync().catch(() => undefined);
+    }
   }, []);
 
   const togglePause = useCallback(() => {
@@ -338,8 +370,14 @@ export function useGameLoop() {
       health,
       highScore,
       bestCombo,
-      totalRuns,
       gameState,
+      testInvincible,
+      toggleTestInvincible: () => {
+        if (!__DEV__) {
+          return;
+        }
+        setTestInvincible((value) => !value);
+      },
       cycleShieldColor,
       togglePause,
       restart,
@@ -358,8 +396,8 @@ export function useGameLoop() {
       shakeX,
       shakeY,
       snapshot,
+      testInvincible,
       togglePause,
-      totalRuns,
     ],
   );
 }
@@ -420,9 +458,11 @@ function emitParticles(
   colorKey: ShieldColorKey,
   count: number,
   sim: SimState,
+  activeBallCount: number,
 ) {
-  for (let index = 0; index < count; index += 1) {
-    const angle = (Math.PI * 2 * index) / count + Math.random() * 0.55;
+  const burstCount = getParticleBurstCount(count, particles.length, activeBallCount);
+  for (let index = 0; index < burstCount; index += 1) {
+    const angle = (Math.PI * 2 * index) / burstCount + Math.random() * 0.55;
     const speed = 24 + Math.random() * 120;
     particles.push({
       id: sim.particleId++,
@@ -460,4 +500,50 @@ function triggerShake(shakeX: ReturnType<typeof useSharedValue<number>>, shakeY:
   const offsetY = (Math.random() - 0.5) * 10;
   shakeX.value = withSequence(withTiming(offsetX, { duration: 38 }), withTiming(0, { duration: 120 }));
   shakeY.value = withSequence(withTiming(offsetY, { duration: 38 }), withTiming(0, { duration: 120 }));
+}
+
+function getRenderIntervalMs(activeBallCount: number, particleCount: number) {
+  if (activeBallCount >= 8 || particleCount >= 42) {
+    return 32;
+  }
+  if (activeBallCount >= 5 || particleCount >= 24) {
+    return 24;
+  }
+  return 16;
+}
+
+function getParticleBudget(activeBallCount: number) {
+  if (activeBallCount >= 8) {
+    return 42;
+  }
+  if (activeBallCount >= 5) {
+    return 60;
+  }
+  return 84;
+}
+
+function getScorePopupBudget(activeBallCount: number) {
+  return activeBallCount >= 6 ? 5 : 8;
+}
+
+function getParticleBurstCount(baseCount: number, particleCount: number, activeBallCount: number) {
+  if (activeBallCount >= 8 || particleCount >= 42) {
+    return Math.max(4, Math.floor(baseCount * 0.5));
+  }
+  if (activeBallCount >= 5 || particleCount >= 24) {
+    return Math.max(6, Math.floor(baseCount * 0.75));
+  }
+  return baseCount;
+}
+
+function cloneBallEntity(ball: BallEntity): BallEntity {
+  return { ...ball };
+}
+
+function cloneParticleEntity(particle: ParticleEntity): ParticleEntity {
+  return { ...particle };
+}
+
+function cloneScorePopup(popup: ScorePopup): ScorePopup {
+  return { ...popup };
 }

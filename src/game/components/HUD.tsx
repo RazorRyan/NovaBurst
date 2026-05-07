@@ -12,6 +12,9 @@ type HUDProps = {
   health: number;
   highScore: number;
   paused: boolean;
+  testInvincible: boolean;
+  showDebugControls?: boolean;
+  onToggleTestInvincible?: () => void;
   onTogglePause: () => void;
 };
 
@@ -21,6 +24,9 @@ function HUDComponent({
   health,
   highScore,
   paused,
+  testInvincible,
+  showDebugControls = false,
+  onToggleTestInvincible,
   onTogglePause,
 }: HUDProps) {
   return (
@@ -47,12 +53,36 @@ function HUDComponent({
 
       <View style={styles.bottomRow}>
         <View style={styles.healthPill}>
-          <Text style={styles.healthText}>Lives {health}</Text>
+          <Text style={styles.healthText}>
+            {testInvincible ? "Lives INF" : `Lives ${health}`}
+          </Text>
         </View>
         <View style={styles.tipPill}>
-          <Text style={styles.tipText}>Tap anywhere or press Space to switch color</Text>
+          <Text style={styles.tipText}>
+            {testInvincible
+              ? "TEST INVINCIBLE ON - Tap anywhere or press Space to switch color"
+              : "Tap anywhere or press Space to switch color"}
+          </Text>
         </View>
       </View>
+
+      {showDebugControls ? (
+        <View style={styles.debugRow}>
+          <Pressable
+            style={[
+              styles.debugButton,
+              testInvincible ? styles.debugButtonActive : styles.debugButtonInactive,
+            ]}
+            onPress={onToggleTestInvincible}
+            hitSlop={PAUSE_HIT_SLOP}
+            pressRetentionOffset={PAUSE_PRESS_RETENTION}
+          >
+            <Text style={styles.debugButtonText}>
+              {testInvincible ? "Invincible: ON" : "Invincible: OFF"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -143,6 +173,33 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  debugRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  debugButton: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  debugButtonActive: {
+    backgroundColor: "rgba(88, 255, 188, 0.18)",
+    borderColor: "rgba(88, 255, 188, 0.4)",
+  },
+  debugButtonInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: cosmicPalette.border,
+  },
+  debugButtonText: {
+    color: cosmicPalette.text,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.4,
   },
   healthPill: {
     minHeight: 44,

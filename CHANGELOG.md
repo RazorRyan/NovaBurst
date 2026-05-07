@@ -38,3 +38,13 @@
 - Executed Prompt 10 by upgrading color switching with a lightweight transition flash, previous-color echo ring, stronger shield pulse, and core glow response so successful switches read instantly.
 - Tightened switch feel by suppressing fake switch feedback during the one-color warmup phase, which prevents taps from buzzing and flashing when no actual color change is possible yet.
 - Architecture decision: kept the new game-feel pass inside the existing ref-driven simulation snapshot with a single short-lived `switchFlash` value, preserving responsiveness without adding heavier animation state.
+- Executed Prompt 11 by reducing full React snapshot publishes during heavy action, using an adaptive render interval so the simulation stays responsive while late-game load rises.
+- Added adaptive effect budgets for particles and score popups, plus lighter burst counts during dense combat, so visual feedback scales down gracefully instead of spiking frame cost.
+- Reduced native feedback pressure by rate-limiting haptic calls for switching, hits, and damage, and removed an unused game-state subscription from the main screen to avoid extra rerender work.
+
+## 2026-05-08
+
+- Added a dev-only test invincibility mode in `src/game/hooks/useGameLoop.ts` so local builds can survive heavy late-game action for stress testing.
+- Surfaced the active test mode in `src/game/components/HUD.tsx` with a visible `TEST INVINCIBLE ON` hint and `Lives INF` status so the run state is obvious while profiling.
+- Kept damage feedback active during test invincibility, which lets heavy-load testing still exercise impact flashes, particles, shake, and haptic pacing without ending the run.
+- Added a dev-only HUD toggle for test invincibility so local builds can switch stress-test survivability on and off live without editing code or restarting the run.

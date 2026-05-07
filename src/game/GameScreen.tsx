@@ -24,8 +24,9 @@ export function GameScreen() {
     health,
     highScore,
     bestCombo,
-    totalRuns,
     gameState,
+    testInvincible,
+    toggleTestInvincible,
     cycleShieldColor,
     togglePause,
     restart,
@@ -192,6 +193,9 @@ export function GameScreen() {
           health={health}
           highScore={highScore}
           paused={gameState === "paused"}
+          testInvincible={testInvincible}
+          showDebugControls={__DEV__}
+          onToggleTestInvincible={toggleTestInvincible}
           onTogglePause={togglePause}
         />
 
