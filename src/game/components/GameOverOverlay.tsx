@@ -3,6 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { cosmicPalette } from "../utils/palette";
 
+const RETRY_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
+const RETRY_PRESS_RETENTION = { top: 18, bottom: 18, left: 18, right: 18 } as const;
+
 type GameOverOverlayProps = {
   visible: boolean;
   score: number;
@@ -31,7 +34,12 @@ function GameOverOverlayComponent({
         <Text style={styles.best}>High score: {highScore}</Text>
         <Text style={styles.combo}>Peak combo: {combo}</Text>
 
-        <Pressable style={styles.button} onPress={onRestart}>
+        <Pressable
+          style={styles.button}
+          onPress={onRestart}
+          hitSlop={RETRY_HIT_SLOP}
+          pressRetentionOffset={RETRY_PRESS_RETENTION}
+        >
           <Text style={styles.buttonText}>Retry</Text>
         </Pressable>
       </View>
@@ -51,15 +59,15 @@ const styles = StyleSheet.create({
   },
   panel: {
     width: "100%",
-    maxWidth: 320,
-    borderRadius: 28,
+    maxWidth: 340,
+    borderRadius: 30,
     paddingHorizontal: 24,
-    paddingVertical: 28,
+    paddingVertical: 30,
     backgroundColor: "rgba(8, 12, 28, 0.95)",
     borderWidth: 1,
     borderColor: cosmicPalette.border,
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   kicker: {
     color: cosmicPalette.danger,
@@ -89,16 +97,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   button: {
-    marginTop: 8,
-    minWidth: 180,
+    marginTop: 12,
+    minWidth: 220,
     borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    minHeight: 56,
+    paddingHorizontal: 22,
+    paddingVertical: 16,
     backgroundColor: cosmicPalette.core,
+    justifyContent: "center",
+    alignSelf: "stretch",
   },
   buttonText: {
     color: "#041220",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "800",
     textAlign: "center",
   },

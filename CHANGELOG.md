@@ -26,3 +26,9 @@
 - Removed old rotation- and progression-specific gameplay files so the repo no longer carries the outdated ring-control model or upgrade tray in the active game flow.
 - Balancing changes: runs now start with 2 colors, 3 lives, brief post-hit invincibility, easier early spawn pacing, gradual color unlocks, and later hazard balls.
 - Replaced the browser-only `window.addEventListener` keyboard hook with a React Native `Keyboard` listener gated to web so the new Prompt 06 screen does not crash on Expo native runtimes.
+- Executed Prompt 07 by replacing the full-screen gameplay `Pressable` tap handler with an immediate responder layer so shield color switches register on touch start instead of waiting for `onPress`.
+- Tightened the stage overlay stacking so passive guidance layers stay above the arena visually without stealing gameplay taps, while pause and game-over states still block input intentionally.
+- Architecture decision: kept the fast color-switch path outside React state and routed it straight into the existing ref-driven simulation callback for lower touch latency on Android.
+- Executed Prompt 08 by increasing the pause and retry control sizes, widening their invisible hit areas, and adding more thumb-friendly spacing across the HUD and overlay actions.
+- Improved mobile readability and comfort by slightly enlarging the bottom guidance chips and separating them farther from the active playfield edge without reducing the full-screen gameplay tap area.
+- Architecture decision: kept the control-size pass purely in low-frequency UI layout and touch-target props so mobile usability improved without changing the simulation loop or input callback flow.

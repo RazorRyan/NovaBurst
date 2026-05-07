@@ -1,7 +1,6 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   Platform,
-  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -59,102 +58,117 @@ export function GameScreen() {
     transform: [{ translateX: shakeX.value }, { translateY: shakeY.value }],
   }));
 
+  const handleStageTouchStart = useCallback(() => {
+    if (gameState !== "running") {
+      return;
+    }
+    cycleShieldColor();
+  }, [cycleShieldColor, gameState]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Animated.View style={[styles.stage, stageStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={cycleShieldColor}>
-          <View style={styles.background}>
-            <View style={styles.nebulaA} />
-            <View style={styles.nebulaB} />
-            {snapshot.stars.map((star) => (
+        <View style={styles.background}>
+          <View style={styles.nebulaA} />
+          <View style={styles.nebulaB} />
+          {snapshot.stars.map((star) => (
+            <View
+              key={star.id}
+              style={[
+                styles.star,
+                {
+                  width: star.radius * 2,
+                  height: star.radius * 2,
+                  borderRadius: star.radius,
+                  left: star.x - star.radius,
+                  top: star.y - star.radius,
+                  opacity: star.alpha,
+                },
+              ]}
+            />
+          ))}
+
+          {snapshot.lowHealthPulse > 0 ? (
+            <View
+              pointerEvents="none"
+              style={[styles.lowHealthOverlay, { opacity: snapshot.lowHealthPulse }]}
+            />
+          ) : null}
+          {snapshot.damageFlash > 0 ? (
+            <View
+              pointerEvents="none"
+              style={[styles.damageOverlay, { opacity: snapshot.damageFlash * 0.28 }]}
+            />
+          ) : null}
+
+          <Core
+            size={snapshot.coreRadius}
+            x={snapshot.center.x}
+            y={snapshot.center.y}
+            invinciblePulse={snapshot.invinciblePulse}
+          />
+          <ShieldIndicator
+            colorKey={snapshot.activeColor}
+            radius={snapshot.shieldRadius}
+            x={snapshot.center.x}
+            y={snapshot.center.y}
+            pulse={snapshot.shieldPulse}
+          />
+
+          {snapshot.balls.map((ball) => (
+            <Ball key={ball.id} ball={ball} />
+          ))}
+
+          {snapshot.particles.map((particle) => {
+            const alpha = particle.life / particle.maxLife;
+            return (
               <View
-                key={star.id}
+                key={particle.id}
                 style={[
-                  styles.star,
+                  styles.particle,
                   {
-                    width: star.radius * 2,
-                    height: star.radius * 2,
-                    borderRadius: star.radius,
-                    left: star.x - star.radius,
-                    top: star.y - star.radius,
-                    opacity: star.alpha,
+                    width: particle.radius * 2,
+                    height: particle.radius * 2,
+                    borderRadius: particle.radius,
+                    left: particle.x - particle.radius,
+                    top: particle.y - particle.radius,
+                    opacity: alpha,
+                    backgroundColor: shieldColorMap[particle.colorKey],
                   },
                 ]}
               />
-            ))}
+            );
+          })}
 
-            {snapshot.lowHealthPulse > 0 ? (
-              <View
-                pointerEvents="none"
-                style={[styles.lowHealthOverlay, { opacity: snapshot.lowHealthPulse }]}
-              />
-            ) : null}
-            {snapshot.damageFlash > 0 ? (
-              <View
-                pointerEvents="none"
-                style={[styles.damageOverlay, { opacity: snapshot.damageFlash * 0.28 }]}
-              />
-            ) : null}
+          {snapshot.scorePopups.map((popup) => {
+            const alpha = popup.life / popup.maxLife;
+            return (
+              <Text
+                key={popup.id}
+                style={[
+                  styles.scorePopup,
+                  {
+                    left: popup.x - 24,
+                    top: popup.y,
+                    opacity: alpha,
+                  },
+                ]}
+              >
+                {popup.label}
+              </Text>
+            );
+          })}
+        </View>
 
-            <Core
-              size={snapshot.coreRadius}
-              x={snapshot.center.x}
-              y={snapshot.center.y}
-              invinciblePulse={snapshot.invinciblePulse}
-            />
-            <ShieldIndicator
-              colorKey={snapshot.activeColor}
-              radius={snapshot.shieldRadius}
-              x={snapshot.center.x}
-              y={snapshot.center.y}
-              pulse={snapshot.shieldPulse}
-            />
-
-            {snapshot.balls.map((ball) => (
-              <Ball key={ball.id} ball={ball} />
-            ))}
-
-            {snapshot.particles.map((particle) => {
-              const alpha = particle.life / particle.maxLife;
-              return (
-                <View
-                  key={particle.id}
-                  style={[
-                    styles.particle,
-                    {
-                      width: particle.radius * 2,
-                      height: particle.radius * 2,
-                      borderRadius: particle.radius,
-                      left: particle.x - particle.radius,
-                      top: particle.y - particle.radius,
-                      opacity: alpha,
-                      backgroundColor: shieldColorMap[particle.colorKey],
-                    },
-                  ]}
-                />
-              );
-            })}
-
-            {snapshot.scorePopups.map((popup) => {
-              const alpha = popup.life / popup.maxLife;
-              return (
-                <Text
-                  key={popup.id}
-                  style={[
-                    styles.scorePopup,
-                    {
-                      left: popup.x - 24,
-                      top: popup.y,
-                      opacity: alpha,
-                    },
-                  ]}
-                >
-                  {popup.label}
-                </Text>
-              );
-            })}
-          </View>
-        </Pressable>
+        <View
+          collapsable={false}
+          style={styles.touchLayer}
+          onStartShouldSetResponder={() => gameState === "running"}
+          onResponderGrant={handleStageTouchStart}
+          importantForAccessibility="no-hide-descendants"
+        >
+          <View style={styles.touchLayerFill} />
+        </View>
 
         <HUD
           score={score}
@@ -219,6 +233,13 @@ const styles = StyleSheet.create({
     backgroundColor: cosmicPalette.background,
     overflow: "hidden",
   },
+  touchLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+  },
+  touchLayerFill: {
+    flex: 1,
+  },
   nebulaA: {
     position: "absolute",
     width: 420,
@@ -267,18 +288,19 @@ const styles = StyleSheet.create({
   },
   colorGuide: {
     position: "absolute",
-    bottom: 18,
+    bottom: 22,
     left: 18,
     right: 18,
     alignItems: "center",
+    zIndex: 4,
   },
   colorGuideText: {
     color: cosmicPalette.textDim,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     backgroundColor: "rgba(6, 10, 24, 0.62)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 999,
     overflow: "hidden",
   },
@@ -287,6 +309,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(5, 9, 20, 0.48)",
+    zIndex: 5,
   },
   pauseTitle: {
     color: cosmicPalette.text,
@@ -301,13 +324,14 @@ const styles = StyleSheet.create({
   },
   legend: {
     position: "absolute",
-    bottom: 56,
-    left: 16,
-    right: 16,
+    bottom: 66,
+    left: 18,
+    right: 18,
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
+    gap: 12,
     flexWrap: "wrap",
+    zIndex: 4,
   },
   legendItem: {
     flexDirection: "row",
@@ -316,8 +340,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(6, 10, 24, 0.52)",
     borderWidth: 1,
     borderColor: cosmicPalette.border,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 999,
   },
   legendDot: {
@@ -327,7 +351,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     color: cosmicPalette.textDim,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
     textTransform: "capitalize",
   },

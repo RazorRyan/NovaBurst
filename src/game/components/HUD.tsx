@@ -3,6 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { cosmicPalette } from "../utils/palette";
 
+const PAUSE_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
+const PAUSE_PRESS_RETENTION = { top: 16, bottom: 16, left: 16, right: 16 } as const;
+
 type HUDProps = {
   score: number;
   combo: number;
@@ -32,7 +35,12 @@ function HUDComponent({
           <Text style={styles.score}>{score}</Text>
           <Text style={styles.combo}>{combo > 1 ? `${combo}x combo` : "Stay sharp"}</Text>
         </View>
-        <Pressable style={styles.pauseButton} onPress={onTogglePause}>
+        <Pressable
+          style={styles.pauseButton}
+          onPress={onTogglePause}
+          hitSlop={PAUSE_HIT_SLOP}
+          pressRetentionOffset={PAUSE_PRESS_RETENTION}
+        >
           <Text style={styles.pauseText}>{paused ? "Resume" : "Pause"}</Text>
         </Pressable>
       </View>
@@ -57,34 +65,38 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 12,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    gap: 14,
   },
   topRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
     alignItems: "flex-start",
     justifyContent: "space-between",
   },
   pill: {
-    minWidth: 82,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 18,
+    minWidth: 92,
+    minHeight: 60,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 20,
     backgroundColor: cosmicPalette.surface,
     borderWidth: 1,
     borderColor: cosmicPalette.border,
+    justifyContent: "center",
   },
   centerPill: {
     flex: 1,
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 22,
+    minHeight: 72,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 24,
     backgroundColor: cosmicPalette.surface,
     borderWidth: 1,
     borderColor: cosmicPalette.border,
+    justifyContent: "center",
   },
   label: {
     color: cosmicPalette.textDim,
@@ -110,51 +122,57 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   pauseButton: {
-    minWidth: 82,
-    paddingHorizontal: 14,
+    minWidth: 104,
+    minHeight: 60,
+    paddingHorizontal: 18,
     paddingVertical: 14,
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: cosmicPalette.surface,
     borderWidth: 1,
     borderColor: cosmicPalette.border,
+    justifyContent: "center",
   },
   pauseText: {
     color: cosmicPalette.text,
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
   },
   bottomRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
     alignItems: "center",
     justifyContent: "space-between",
   },
   healthPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 999,
     backgroundColor: "rgba(7, 12, 28, 0.74)",
     borderWidth: 1,
     borderColor: cosmicPalette.border,
+    justifyContent: "center",
   },
   healthText: {
     color: cosmicPalette.text,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "800",
   },
   tipPill: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 999,
     backgroundColor: "rgba(7, 12, 28, 0.74)",
     borderWidth: 1,
     borderColor: cosmicPalette.border,
+    justifyContent: "center",
   },
   tipText: {
     color: cosmicPalette.textDim,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     textAlign: "center",
   },
