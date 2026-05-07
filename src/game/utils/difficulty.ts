@@ -7,19 +7,19 @@ export const GAME_CONFIG = {
   baseScorePerSecond: 10,
   absorbScore: 18,
   comboWindowBonus: 0.2,
-  startSpeed: 72,
-  maxSpeed: 190,
-  initialSpawnIntervalMs: 1100,
-  minSpawnIntervalMs: 320,
+  startSpeed: 56,
+  maxSpeed: 188,
+  initialSpawnIntervalMs: 1600,
+  minSpawnIntervalMs: 420,
   invincibilityMs: 900,
-  easyWindowMs: 30000,
-  colorUnlockTimeMs: 18000,
-  colorUnlockScore: 180,
-  secondColorCount: 2,
-  thirdColorUnlockMs: 28000,
-  fourthColorUnlockMs: 50000,
-  hazardUnlockMs: 42000,
-  hazardChanceMax: 0.18,
+  phaseOneEndMs: 20000,
+  phaseTwoEndMs: 45000,
+  phaseThreeEndMs: 90000,
+  secondColorUnlockMs: 20000,
+  thirdColorUnlockMs: 55000,
+  fourthColorUnlockMs: 80000,
+  hazardUnlockMs: 95000,
+  hazardChanceMax: 0.16,
   shieldRadius: 110,
   coreRadius: 34,
   hitRadiusPadding: 6,
@@ -32,35 +32,111 @@ export type DifficultyState = {
   speed: number;
   colorCount: number;
   hazardChance: number;
+  maxBalls: number;
 };
 
-export function getDifficultyState(elapsedMs: number, score: number): DifficultyState {
-  const ramp = Math.min(1, elapsedMs / 90000);
-  const spawnIntervalMs =
-    GAME_CONFIG.initialSpawnIntervalMs -
-    (GAME_CONFIG.initialSpawnIntervalMs - GAME_CONFIG.minSpawnIntervalMs) * ramp;
-  const speed = GAME_CONFIG.startSpeed + (GAME_CONFIG.maxSpeed - GAME_CONFIG.startSpeed) * ramp;
-
-  let colorCount: number = GAME_CONFIG.secondColorCount;
-  if (elapsedMs >= GAME_CONFIG.thirdColorUnlockMs || score >= GAME_CONFIG.colorUnlockScore) {
-    colorCount = 3;
-  }
-  if (elapsedMs >= GAME_CONFIG.fourthColorUnlockMs || score >= GAME_CONFIG.colorUnlockScore * 2) {
-    colorCount = 4;
-  }
-
-  const hazardChance =
-    elapsedMs < GAME_CONFIG.hazardUnlockMs
-      ? 0
-      : Math.min(
-          GAME_CONFIG.hazardChanceMax,
-          ((elapsedMs - GAME_CONFIG.hazardUnlockMs) / 60000) * GAME_CONFIG.hazardChanceMax,
-        );
+export function getDifficultyState(elapsedMs: number, _score: number): DifficultyState {
+  const spawnIntervalMs = getSpawnIntervalMs(elapsedMs);
+  const speed = getSpeed(elapsedMs);
+  const colorCount = getColorCount(elapsedMs);
+  const maxBalls = getMaxBalls(elapsedMs);
+  const hazardChance = getHazardChance(elapsedMs);
 
   return {
     spawnIntervalMs,
     speed,
     colorCount,
     hazardChance,
+    maxBalls,
   };
+}
+
+function getSpawnIntervalMs(elapsedMs: number): number {
+  if (elapsedMs < GAME_CONFIG.phaseOneEndMs) {
+    return lerp(1600, 1320, elapsedMs / GAME_CONFIG.phaseOneEndMs);
+  }
+
+  if (elapsedMs < GAME_CONFIG.phaseTwoEndMs) {
+    return lerp(
+      1320,
+      1080,
+      (elapsedMs - GAME_CONFIG.phaseOneEndMs) / (GAME_CONFIG.phaseTwoEndMs - GAME_CONFIG.phaseOneEndMs),
+    );
+  }
+
+  if (elapsedMs < GAME_CONFIG.phaseThreeEndMs) {
+    return lerp(
+      1080,
+      760,
+      (elapsedMs - GAME_CONFIG.phaseTwoEndMs) / (GAME_CONFIG.phaseThreeEndMs - GAME_CONFIG.phaseTwoEndMs),
+    );
+  }
+
+  return lerp(760, GAME_CONFIG.minSpawnIntervalMs, Math.min(1, (elapsedMs - GAME_CONFIG.phaseThreeEndMs) / 90000));
+}
+
+function getSpeed(elapsedMs: number): number {
+  if (elapsedMs < GAME_CONFIG.phaseOneEndMs) {
+    return lerp(56, 72, elapsedMs / GAME_CONFIG.phaseOneEndMs);
+  }
+
+  if (elapsedMs < GAME_CONFIG.phaseTwoEndMs) {
+    return lerp(
+      72,
+      96,
+      (elapsedMs - GAME_CONFIG.phaseOneEndMs) / (GAME_CONFIG.phaseTwoEndMs - GAME_CONFIG.phaseOneEndMs),
+    );
+  }
+
+  if (elapsedMs < GAME_CONFIG.phaseThreeEndMs) {
+    return lerp(
+      96,
+      132,
+      (elapsedMs - GAME_CONFIG.phaseTwoEndMs) / (GAME_CONFIG.phaseThreeEndMs - GAME_CONFIG.phaseTwoEndMs),
+    );
+  }
+
+  return lerp(132, GAME_CONFIG.maxSpeed, Math.min(1, (elapsedMs - GAME_CONFIG.phaseThreeEndMs) / 90000));
+}
+
+function getColorCount(elapsedMs: number): number {
+  if (elapsedMs < GAME_CONFIG.secondColorUnlockMs) {
+    return 1;
+  }
+  if (elapsedMs < GAME_CONFIG.thirdColorUnlockMs) {
+    return 2;
+  }
+  if (elapsedMs < GAME_CONFIG.fourthColorUnlockMs) {
+    return 3;
+  }
+  return 4;
+}
+
+function getMaxBalls(elapsedMs: number): number {
+  if (elapsedMs < GAME_CONFIG.phaseOneEndMs) {
+    return 3;
+  }
+  if (elapsedMs < GAME_CONFIG.phaseTwoEndMs) {
+    return 5;
+  }
+  if (elapsedMs < GAME_CONFIG.phaseThreeEndMs) {
+    return 7;
+  }
+  return 9 + Math.min(5, Math.floor((elapsedMs - GAME_CONFIG.phaseThreeEndMs) / 30000));
+}
+
+function getHazardChance(elapsedMs: number): number {
+  if (elapsedMs < GAME_CONFIG.hazardUnlockMs) {
+    return 0;
+  }
+
+  return Math.min(
+    GAME_CONFIG.hazardChanceMax,
+    ((elapsedMs - GAME_CONFIG.hazardUnlockMs) / 90000) * GAME_CONFIG.hazardChanceMax,
+  );
+}
+
+function lerp(start: number, end: number, progress: number): number {
+  const clamped = Math.max(0, Math.min(1, progress));
+  return start + (end - start) * clamped;
 }

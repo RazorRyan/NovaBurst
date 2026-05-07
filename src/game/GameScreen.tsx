@@ -180,11 +180,9 @@ export function GameScreen() {
         />
 
         <View pointerEvents="none" style={styles.colorGuide}>
-          {snapshot.activeColorIndex < 2 ? (
-            <Text style={styles.colorGuideText}>2-color start. More colors unlock as you survive.</Text>
-          ) : (
-            <Text style={styles.colorGuideText}>Stay ahead of the color rush.</Text>
-          )}
+          <Text style={styles.colorGuideText}>
+            {getColorGuideText(snapshot.availableColorCount, snapshot.elapsedMs)}
+          </Text>
         </View>
 
         <GameOverOverlay
@@ -356,3 +354,21 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
 });
+
+function getColorGuideText(availableColorCount: number, elapsedMs: number) {
+  if (availableColorCount === 1) {
+    return "1-color warmup. Learn the rhythm before the rush builds.";
+  }
+
+  if (availableColorCount === 2) {
+    return "Second color online. Stay calm and switch with intention.";
+  }
+
+  if (availableColorCount === 3) {
+    return elapsedMs < 90000
+      ? "The pace is building. Read the lane and switch early."
+      : "Three colors active. Stay ahead of the rush.";
+  }
+
+  return "Full spectrum survival. Trust your rhythm and react fast.";
+}

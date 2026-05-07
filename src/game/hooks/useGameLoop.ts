@@ -74,6 +74,7 @@ function createSnapshot(width: number, height: number, stars: Star[]): GameSnaps
     height,
     center: { x: width / 2, y: height / 2 },
     elapsedMs: 0,
+    availableColorCount: 1,
     shieldRadius: Math.min(GAME_CONFIG.shieldRadius, Math.min(width, height) * 0.24),
     coreRadius: GAME_CONFIG.coreRadius,
     activeColor: SHIELD_COLORS[0],
@@ -156,7 +157,7 @@ export function useGameLoop() {
           GAME_CONFIG.baseScorePerSecond *
           (1 + Math.max(0, store.combo - 1) * GAME_CONFIG.comboWindowBonus);
 
-        while (sim.spawnTimerMs >= difficulty.spawnIntervalMs) {
+        while (sim.spawnTimerMs >= difficulty.spawnIntervalMs && sim.balls.length < difficulty.maxBalls) {
           sim.spawnTimerMs -= difficulty.spawnIntervalMs;
           sim.balls.push(
             createBall({
@@ -261,6 +262,7 @@ export function useGameLoop() {
         height,
         center,
         elapsedMs: sim.elapsedMs,
+        availableColorCount: difficulty.colorCount,
         shieldRadius,
         coreRadius: GAME_CONFIG.coreRadius,
         activeColor,

@@ -56,6 +56,7 @@ export type GameSnapshot = {
   height: number;
   center: Vector2;
   elapsedMs: number;
+  availableColorCount: number;
   shieldRadius: number;
   coreRadius: number;
   activeColor: ShieldColorKey;

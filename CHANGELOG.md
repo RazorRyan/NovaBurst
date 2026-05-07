@@ -32,3 +32,6 @@
 - Executed Prompt 08 by increasing the pause and retry control sizes, widening their invisible hit areas, and adding more thumb-friendly spacing across the HUD and overlay actions.
 - Improved mobile readability and comfort by slightly enlarging the bottom guidance chips and separating them farther from the active playfield edge without reducing the full-screen gameplay tap area.
 - Architecture decision: kept the control-size pass purely in low-frequency UI layout and touch-target props so mobile usability improved without changing the simulation loop or input callback flow.
+- Executed Prompt 09 by rebuilding the difficulty curve into phased onboarding windows: `0–20s` one-color warmup, `20–45s` two-color ramp, `45–90s` moderate escalation, and `90s+` progressive survival pressure.
+- Reduced early overwhelm by slowing initial spawn and movement speeds, delaying later color unlocks and hazard introduction, and capping simultaneous active balls more aggressively during the opening phases.
+- Added snapshot-level color-count guidance so the on-screen coaching now matches the active difficulty phase instead of implying a multi-color start from the first seconds.
