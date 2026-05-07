@@ -12,6 +12,7 @@ import {
   BASE_CORE_RADIUS,
   BASE_SHIELD_RADIUS,
   BLOCK_SCORE_BONUS,
+  HOLD_ROTATION_SPEED,
   MAX_HEALTH,
   MAX_PARTICLES,
   SCORE_PER_SECOND,
@@ -19,6 +20,7 @@ import {
   SHIELD_ROTATION_STEP,
   SHIELD_SEGMENT_GAP,
   SHIELD_SEGMENT_SWEEP,
+  TAP_ROTATION_BURST,
 } from "../systems/gameConstants";
 import { findShieldSegmentHit, hasReachedCore } from "../systems/collisions";
 import { createIncomingObject, getDifficultyProgress, getSpawnIntervalMs } from "../systems/spawn";
@@ -123,9 +125,12 @@ export function useNovaBurstGame() {
   const starsRef = useRef<Star[]>([]);
   const simRef = useRef<MutableSimulationState>(createEmptySimulation());
   const lastFrameRef = useRef(0);
+  const inputDirectionRef = useRef<-1 | 0 | 1>(0);
   const shieldAngle = useSharedValue(0);
   const shakeX = useSharedValue(0);
   const shakeY = useSharedValue(0);
+  const leftPress = useSharedValue(0);
+  const rightPress = useSharedValue(0);
   const [snapshot, setSnapshot] = useState<RenderSnapshot>(() =>
     createBaseSnapshot(Math.max(width, 1), Math.max(height, 1), createStars(Math.max(width, 1), Math.max(height, 1))),
   );
@@ -201,6 +206,10 @@ export function useNovaBurstGame() {
         const blockedObjects = new Set<number>();
         let pendingHealth = state.health;
         let pendingCombo = state.combo;
+
+        if (inputDirectionRef.current !== 0) {
+          shieldAngle.value += inputDirectionRef.current * HOLD_ROTATION_SPEED * (deltaMs / 1000);
+        }
 
         for (const object of sim.incomingObjects) {
           object.previousX = object.x;
@@ -319,7 +328,7 @@ export function useNovaBurstGame() {
     if (useGameStore.getState().gameState !== "running") {
       return;
     }
-    shieldAngle.value = withTiming(shieldAngle.value - SHIELD_ROTATION_STEP, {
+    shieldAngle.value = withTiming(shieldAngle.value - Math.max(SHIELD_ROTATION_STEP, TAP_ROTATION_BURST), {
       duration: SHIELD_ROTATION_DURATION_MS,
     });
   }, [shieldAngle]);
@@ -328,14 +337,26 @@ export function useNovaBurstGame() {
     if (useGameStore.getState().gameState !== "running") {
       return;
     }
-    shieldAngle.value = withTiming(shieldAngle.value + SHIELD_ROTATION_STEP, {
+    shieldAngle.value = withTiming(shieldAngle.value + Math.max(SHIELD_ROTATION_STEP, TAP_ROTATION_BURST), {
       duration: SHIELD_ROTATION_DURATION_MS,
     });
   }, [shieldAngle]);
 
+  const setInputDirection = useCallback(
+    (direction: -1 | 0 | 1) => {
+      inputDirectionRef.current = direction;
+      leftPress.value = withTiming(direction === -1 ? 1 : 0, { duration: 90 });
+      rightPress.value = withTiming(direction === 1 ? 1 : 0, { duration: 90 });
+    },
+    [leftPress, rightPress],
+  );
+
   const restart = useCallback(() => {
+    inputDirectionRef.current = 0;
+    leftPress.value = 0;
+    rightPress.value = 0;
     setRestartSeed((value) => value + 1);
-  }, []);
+  }, [leftPress, rightPress]);
 
   return useMemo(
     () => ({
@@ -347,19 +368,25 @@ export function useNovaBurstGame() {
       gameState,
       rotateLeft,
       rotateRight,
+      setInputDirection,
       restart,
       shakeX,
       shakeY,
+      leftPress,
+      rightPress,
     }),
     [
       combo,
       gameState,
       health,
       highScore,
+      leftPress,
       restart,
+      rightPress,
       rotateLeft,
       rotateRight,
       score,
+      setInputDirection,
       shakeX,
       shakeY,
       snapshot,

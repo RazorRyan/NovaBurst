@@ -12,3 +12,5 @@ export const MAX_OBJECT_SPEED = 220;
 export const SCORE_PER_SECOND = 14;
 export const BLOCK_SCORE_BONUS = 25;
 export const MAX_PARTICLES = 120;
+export const TAP_ROTATION_BURST = Math.PI / 8.5;
+export const HOLD_ROTATION_SPEED = Math.PI * 1.95;
