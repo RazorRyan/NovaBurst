@@ -22,3 +22,7 @@
 - Executed Prompt 04 by upgrading touch control feel with press-and-hold rotation, immediate tap bursts, animated touch-zone feedback, and a dedicated input hook that keeps fast control state outside React rerender loops.
 - Executed Prompt 05 by adding persisted local progression with Nova Credits, three lightweight upgrades, upgrade effects applied to the core loop, and a compact post-run progression tray.
 - Architecture decision: used persisted Zustand state with AsyncStorage for Expo-compatible local storage instead of MMKV so the progression system stays testable in the current Expo workflow.
+- Executed the new Prompt 06 gameplay pivot by removing the rotating multicolor ring loop and rebuilding NovaBurst around a single active shield color, tap-to-cycle controls, center absorb checks, simpler hyper-casual pacing, and a React Native view-based render layer.
+- Removed old rotation- and progression-specific gameplay files so the repo no longer carries the outdated ring-control model or upgrade tray in the active game flow.
+- Balancing changes: runs now start with 2 colors, 3 lives, brief post-hit invincibility, easier early spawn pacing, gradual color unlocks, and later hazard balls.
+- Replaced the browser-only `window.addEventListener` keyboard hook with a React Native `Keyboard` listener gated to web so the new Prompt 06 screen does not crash on Expo native runtimes.

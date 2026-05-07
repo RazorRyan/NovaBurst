@@ -1,65 +1,55 @@
 import { memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { cosmicPalette, energyColors } from "../utils/palette";
+import { cosmicPalette } from "../utils/palette";
 
-type GameHudProps = {
+type HUDProps = {
   score: number;
   combo: number;
   health: number;
-  maxHealth: number;
   highScore: number;
-  credits: number;
+  paused: boolean;
+  onTogglePause: () => void;
 };
 
-function GameHudComponent({
+function HUDComponent({
   score,
   combo,
   health,
-  maxHealth,
   highScore,
-  credits,
-}: GameHudProps) {
+  paused,
+  onTogglePause,
+}: HUDProps) {
   return (
-    <View pointerEvents="none" style={styles.root}>
-      <View style={styles.topBar}>
-        <View style={styles.sideCard}>
+    <View pointerEvents="box-none" style={styles.root}>
+      <View style={styles.topRow}>
+        <View style={styles.pill}>
           <Text style={styles.label}>Best</Text>
           <Text style={styles.value}>{highScore}</Text>
         </View>
-
-        <View style={styles.centerCard}>
+        <View style={styles.centerPill}>
           <Text style={styles.label}>Score</Text>
           <Text style={styles.score}>{score}</Text>
-          <Text style={styles.combo}>
-            {combo > 1 ? `${combo}x combo` : "Hold the line"}
-          </Text>
+          <Text style={styles.combo}>{combo > 1 ? `${combo}x combo` : "Stay sharp"}</Text>
         </View>
-
-        <View style={styles.sideCard}>
-          <Text style={styles.label}>Credits</Text>
-          <Text style={styles.value}>{credits}</Text>
-        </View>
+        <Pressable style={styles.pauseButton} onPress={onTogglePause}>
+          <Text style={styles.pauseText}>{paused ? "Resume" : "Pause"}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.bottomRow}>
-        <View style={styles.legend}>
-          {Object.values(energyColors).map((color, index) => (
-            <View key={color} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: color }]} />
-              <Text style={styles.legendText}>Arc {index + 1}</Text>
-            </View>
-          ))}
-        </View>
         <View style={styles.healthPill}>
-          <Text style={styles.healthText}>Core {health}/{maxHealth}</Text>
+          <Text style={styles.healthText}>Lives {health}</Text>
+        </View>
+        <View style={styles.tipPill}>
+          <Text style={styles.tipText}>Tap anywhere or press Space to switch color</Text>
         </View>
       </View>
     </View>
   );
 }
 
-export const GameHud = memo(GameHudComponent);
+export const HUD = memo(HUDComponent);
 
 const styles = StyleSheet.create({
   root: {
@@ -71,13 +61,13 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 12,
   },
-  topBar: {
+  topRow: {
     flexDirection: "row",
+    gap: 12,
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
   },
-  sideCard: {
+  pill: {
     minWidth: 82,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -86,7 +76,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: cosmicPalette.border,
   },
-  centerCard: {
+  centerPill: {
     flex: 1,
     alignItems: "center",
     paddingHorizontal: 12,
@@ -119,48 +109,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  legend: {
-    flexDirection: "row",
-    gap: 10,
+  pauseButton: {
+    minWidth: 82,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(7, 12, 28, 0.72)",
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: cosmicPalette.surface,
     borderWidth: 1,
     borderColor: cosmicPalette.border,
   },
+  pauseText: {
+    color: cosmicPalette.text,
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "800",
+  },
   bottomRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     gap: 12,
-  },
-  legendItem: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    color: cosmicPalette.textDim,
-    fontSize: 11,
-    fontWeight: "600",
+    justifyContent: "space-between",
   },
   healthPill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(7, 12, 28, 0.72)",
+    backgroundColor: "rgba(7, 12, 28, 0.74)",
     borderWidth: 1,
     borderColor: cosmicPalette.border,
   },
   healthText: {
     color: cosmicPalette.text,
     fontSize: 12,
+    fontWeight: "800",
+  },
+  tipPill: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(7, 12, 28, 0.74)",
+    borderWidth: 1,
+    borderColor: cosmicPalette.border,
+  },
+  tipText: {
+    color: cosmicPalette.textDim,
+    fontSize: 12,
     fontWeight: "700",
+    textAlign: "center",
   },
 });

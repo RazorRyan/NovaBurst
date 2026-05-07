@@ -1,0 +1,334 @@
+import { useEffect } from "react";
+import {
+  Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+
+import { Ball } from "./components/Ball";
+import { Core } from "./components/Core";
+import { GameOverOverlay } from "./components/GameOverOverlay";
+import { HUD } from "./components/HUD";
+import { ShieldIndicator } from "./components/ShieldIndicator";
+import { useGameLoop } from "./hooks/useGameLoop";
+import { cosmicPalette, hazardColor, shieldColorMap } from "./utils/palette";
+
+export function GameScreen() {
+  const {
+    snapshot,
+    score,
+    combo,
+    health,
+    highScore,
+    bestCombo,
+    totalRuns,
+    gameState,
+    cycleShieldColor,
+    togglePause,
+    restart,
+    shakeX,
+    shakeY,
+  } = useGameLoop();
+
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      return;
+    }
+
+    const browserDocument = globalThis.document;
+    if (!browserDocument?.addEventListener) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === " " || event.code === "Space") {
+        event.preventDefault();
+        cycleShieldColor();
+      }
+    };
+
+    browserDocument.addEventListener("keydown", onKeyDown);
+    return () => browserDocument.removeEventListener("keydown", onKeyDown);
+  }, [cycleShieldColor]);
+
+  const stageStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeX.value }, { translateY: shakeY.value }],
+  }));
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <Animated.View style={[styles.stage, stageStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={cycleShieldColor}>
+          <View style={styles.background}>
+            <View style={styles.nebulaA} />
+            <View style={styles.nebulaB} />
+            {snapshot.stars.map((star) => (
+              <View
+                key={star.id}
+                style={[
+                  styles.star,
+                  {
+                    width: star.radius * 2,
+                    height: star.radius * 2,
+                    borderRadius: star.radius,
+                    left: star.x - star.radius,
+                    top: star.y - star.radius,
+                    opacity: star.alpha,
+                  },
+                ]}
+              />
+            ))}
+
+            {snapshot.lowHealthPulse > 0 ? (
+              <View
+                pointerEvents="none"
+                style={[styles.lowHealthOverlay, { opacity: snapshot.lowHealthPulse }]}
+              />
+            ) : null}
+            {snapshot.damageFlash > 0 ? (
+              <View
+                pointerEvents="none"
+                style={[styles.damageOverlay, { opacity: snapshot.damageFlash * 0.28 }]}
+              />
+            ) : null}
+
+            <Core
+              size={snapshot.coreRadius}
+              x={snapshot.center.x}
+              y={snapshot.center.y}
+              invinciblePulse={snapshot.invinciblePulse}
+            />
+            <ShieldIndicator
+              colorKey={snapshot.activeColor}
+              radius={snapshot.shieldRadius}
+              x={snapshot.center.x}
+              y={snapshot.center.y}
+              pulse={snapshot.shieldPulse}
+            />
+
+            {snapshot.balls.map((ball) => (
+              <Ball key={ball.id} ball={ball} />
+            ))}
+
+            {snapshot.particles.map((particle) => {
+              const alpha = particle.life / particle.maxLife;
+              return (
+                <View
+                  key={particle.id}
+                  style={[
+                    styles.particle,
+                    {
+                      width: particle.radius * 2,
+                      height: particle.radius * 2,
+                      borderRadius: particle.radius,
+                      left: particle.x - particle.radius,
+                      top: particle.y - particle.radius,
+                      opacity: alpha,
+                      backgroundColor: shieldColorMap[particle.colorKey],
+                    },
+                  ]}
+                />
+              );
+            })}
+
+            {snapshot.scorePopups.map((popup) => {
+              const alpha = popup.life / popup.maxLife;
+              return (
+                <Text
+                  key={popup.id}
+                  style={[
+                    styles.scorePopup,
+                    {
+                      left: popup.x - 24,
+                      top: popup.y,
+                      opacity: alpha,
+                    },
+                  ]}
+                >
+                  {popup.label}
+                </Text>
+              );
+            })}
+          </View>
+        </Pressable>
+
+        <HUD
+          score={score}
+          combo={combo}
+          health={health}
+          highScore={highScore}
+          paused={gameState === "paused"}
+          onTogglePause={togglePause}
+        />
+
+        <View pointerEvents="none" style={styles.colorGuide}>
+          {snapshot.activeColorIndex < 2 ? (
+            <Text style={styles.colorGuideText}>2-color start. More colors unlock as you survive.</Text>
+          ) : (
+            <Text style={styles.colorGuideText}>Stay ahead of the color rush.</Text>
+          )}
+        </View>
+
+        <GameOverOverlay
+          visible={gameState === "gameOver"}
+          score={score}
+          highScore={highScore}
+          combo={bestCombo > combo ? bestCombo : combo}
+          onRestart={restart}
+        />
+
+        {gameState === "paused" ? (
+          <View style={styles.pauseOverlay}>
+            <Text style={styles.pauseTitle}>Paused</Text>
+            <Text style={styles.pauseHint}>Tap the pause button to jump back in.</Text>
+          </View>
+        ) : null}
+
+        <View pointerEvents="none" style={styles.legend}>
+          {Object.entries(shieldColorMap).map(([key, color]) => (
+            <View key={key} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: color }]} />
+              <Text style={styles.legendText}>{key}</Text>
+            </View>
+          ))}
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: hazardColor }]} />
+            <Text style={styles.legendText}>hazard</Text>
+          </View>
+        </View>
+      </Animated.View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: cosmicPalette.background,
+  },
+  stage: {
+    flex: 1,
+    backgroundColor: cosmicPalette.background,
+  },
+  background: {
+    flex: 1,
+    backgroundColor: cosmicPalette.background,
+    overflow: "hidden",
+  },
+  nebulaA: {
+    position: "absolute",
+    width: 420,
+    height: 420,
+    borderRadius: 999,
+    left: -120,
+    top: 50,
+    backgroundColor: "rgba(20, 40, 96, 0.24)",
+    shadowColor: "#47d9ff",
+    shadowOpacity: 0.18,
+    shadowRadius: 80,
+  },
+  nebulaB: {
+    position: "absolute",
+    width: 380,
+    height: 380,
+    borderRadius: 999,
+    right: -100,
+    bottom: 80,
+    backgroundColor: "rgba(96, 20, 118, 0.22)",
+    shadowColor: "#ff60df",
+    shadowOpacity: 0.18,
+    shadowRadius: 80,
+  },
+  star: {
+    position: "absolute",
+    backgroundColor: "#fff",
+  },
+  particle: {
+    position: "absolute",
+  },
+  scorePopup: {
+    position: "absolute",
+    color: "#fff6a8",
+    fontSize: 16,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  damageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 88, 88, 1)",
+  },
+  lowHealthOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 186, 72, 0.18)",
+  },
+  colorGuide: {
+    position: "absolute",
+    bottom: 18,
+    left: 18,
+    right: 18,
+    alignItems: "center",
+  },
+  colorGuideText: {
+    color: cosmicPalette.textDim,
+    fontSize: 12,
+    fontWeight: "700",
+    backgroundColor: "rgba(6, 10, 24, 0.62)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  pauseOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(5, 9, 20, 0.48)",
+  },
+  pauseTitle: {
+    color: cosmicPalette.text,
+    fontSize: 28,
+    fontWeight: "900",
+  },
+  pauseHint: {
+    color: cosmicPalette.textDim,
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 6,
+  },
+  legend: {
+    position: "absolute",
+    bottom: 56,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(6, 10, 24, 0.52)",
+    borderWidth: 1,
+    borderColor: cosmicPalette.border,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  legendText: {
+    color: cosmicPalette.textDim,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "capitalize",
+  },
+});

@@ -1,5 +1,3 @@
-import { ColorIndex } from "../types/game";
-
 export const cosmicPalette = {
   background: "#040716",
   nebulaA: "#0d1838",
@@ -14,8 +12,18 @@ export const cosmicPalette = {
   ring: "rgba(126, 168, 255, 0.14)",
 } as const;
 
-export const energyColors: Record<ColorIndex, string> = {
-  0: "#59f6ff",
-  1: "#ff7efb",
-  2: "#ffe96b",
-};
+export const shieldColorMap = {
+  cyan: "#59f6ff",
+  magenta: "#ff7efb",
+  green: "#63ff9d",
+  yellow: "#ffe96b",
+} as const;
+
+export const shieldLabels = {
+  cyan: "Cyan",
+  magenta: "Magenta",
+  green: "Green",
+  yellow: "Yellow",
+} as const;
+
+export const hazardColor = "#ff6161";

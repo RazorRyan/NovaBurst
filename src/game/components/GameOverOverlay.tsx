@@ -7,7 +7,7 @@ type GameOverOverlayProps = {
   visible: boolean;
   score: number;
   highScore: number;
-  creditsEarned: number;
+  combo: number;
   onRestart: () => void;
 };
 
@@ -15,7 +15,7 @@ function GameOverOverlayComponent({
   visible,
   score,
   highScore,
-  creditsEarned,
+  combo,
   onRestart,
 }: GameOverOverlayProps) {
   if (!visible) {
@@ -25,14 +25,14 @@ function GameOverOverlayComponent({
   return (
     <View style={styles.backdrop}>
       <View style={styles.panel}>
-        <Text style={styles.kicker}>Core lost</Text>
+        <Text style={styles.kicker}>Core breached</Text>
         <Text style={styles.title}>Run over</Text>
         <Text style={styles.score}>Final score: {score}</Text>
-        <Text style={styles.best}>Best score: {highScore}</Text>
-        <Text style={styles.credits}>+{creditsEarned} Nova Credits</Text>
+        <Text style={styles.best}>High score: {highScore}</Text>
+        <Text style={styles.combo}>Peak combo: {combo}</Text>
 
         <Pressable style={styles.button} onPress={onRestart}>
-          <Text style={styles.buttonText}>Restart run</Text>
+          <Text style={styles.buttonText}>Retry</Text>
         </Pressable>
       </View>
     </View>
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(2, 5, 14, 0.72)",
+    backgroundColor: "rgba(2, 5, 14, 0.76)",
     padding: 24,
   },
   panel: {
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  credits: {
+  combo: {
     color: cosmicPalette.core,
     fontSize: 14,
     fontWeight: "700",

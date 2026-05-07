@@ -1,4 +1,4 @@
-import { Vector2 } from "../types/game";
+import { Vector2 } from "../types";
 
 const TAU = Math.PI * 2;
 
