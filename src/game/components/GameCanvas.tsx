@@ -5,6 +5,7 @@ import {
   Circle,
   Group,
   Line,
+  LinearGradient,
   Paint,
   Path,
   RadialGradient,
@@ -49,9 +50,12 @@ function GameCanvasComponent({ snapshot }: GameCanvasProps) {
           <RadialGradient
             c={vec(snapshot.center.x, snapshot.center.y)}
             r={Math.max(snapshot.width, snapshot.height) * 0.72}
-            colors={[cosmicPalette.nebulaB, cosmicPalette.background]}
+            colors={[cosmicPalette.nebulaB, cosmicPalette.nebulaC, cosmicPalette.background]}
           />
         </Paint>
+      </Rect>
+      <Rect x={0} y={0} width={snapshot.width} height={snapshot.height} color="rgba(116,58,255,0.04)">
+        <BlurMask blur={90} style="solid" />
       </Rect>
 
       {snapshot.stars.map((star) => (
@@ -61,6 +65,18 @@ function GameCanvasComponent({ snapshot }: GameCanvasProps) {
           cy={star.y}
           r={star.radius}
           color={`rgba(255,255,255,${star.alpha})`}
+        />
+      ))}
+
+      {[0.4, 0.63, 0.88].map((ratio, index) => (
+        <Circle
+          key={ratio}
+          cx={snapshot.center.x}
+          cy={snapshot.center.y}
+          r={snapshot.shieldRadius * (1.2 + ratio) + (snapshot.elapsedMs * 0.005 * (index + 1)) % 22}
+          color="rgba(126,168,255,0.06)"
+          style="stroke"
+          strokeWidth={index === 0 ? 1 : 0.8}
         />
       ))}
 
@@ -98,6 +114,14 @@ function GameCanvasComponent({ snapshot }: GameCanvasProps) {
 
       {snapshot.incomingObjects.map((object) => (
         <Group key={object.id}>
+          <Line
+            p1={vec(object.previousX, object.previousY)}
+            p2={vec(object.x, object.y)}
+            color={`${energyColors[object.colorIndex]}66`}
+            strokeWidth={Math.max(2, object.radius * 0.4)}
+          >
+            <BlurMask blur={7} style="solid" />
+          </Line>
           <Circle cx={object.x} cy={object.y} r={object.radius * 2.2} color={`${energyColors[object.colorIndex]}20`}>
             <BlurMask blur={15} style="solid" />
           </Circle>
@@ -123,6 +147,25 @@ function GameCanvasComponent({ snapshot }: GameCanvasProps) {
         );
       })}
 
+      {snapshot.shockwaves.map((wave) => {
+        const alpha = wave.life / wave.maxLife;
+        return (
+          <Circle
+            key={wave.id}
+            cx={wave.x}
+            cy={wave.y}
+            r={wave.radius}
+            color={`${energyColors[wave.colorIndex]}${Math.round(alpha * 120)
+              .toString(16)
+              .padStart(2, "0")}`}
+            style="stroke"
+            strokeWidth={3}
+          >
+            <BlurMask blur={8} style="solid" />
+          </Circle>
+        );
+      })}
+
       <Line
         p1={vec(snapshot.center.x - 10, snapshot.center.y)}
         p2={vec(snapshot.center.x + 10, snapshot.center.y)}
@@ -135,6 +178,30 @@ function GameCanvasComponent({ snapshot }: GameCanvasProps) {
         color="rgba(255,255,255,0.22)"
         strokeWidth={1}
       />
+      {snapshot.comboPulse > 0 ? (
+        <Rect x={0} y={0} width={snapshot.width} height={snapshot.height}>
+          <Paint>
+            <LinearGradient
+              start={vec(0, 0)}
+              end={vec(snapshot.width, snapshot.height)}
+              colors={[
+                `rgba(89,246,255,${snapshot.comboPulse * 0.08})`,
+                "rgba(255,255,255,0)",
+                `rgba(255,126,251,${snapshot.comboPulse * 0.05})`,
+              ]}
+            />
+          </Paint>
+        </Rect>
+      ) : null}
+      {snapshot.damageFlash > 0 ? (
+        <Rect
+          x={0}
+          y={0}
+          width={snapshot.width}
+          height={snapshot.height}
+          color={`rgba(255,95,116,${snapshot.damageFlash * 0.16})`}
+        />
+      ) : null}
     </Canvas>
   );
 }

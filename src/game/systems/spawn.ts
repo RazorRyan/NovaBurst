@@ -51,6 +51,8 @@ export function createIncomingObject(options: SpawnOptions): IncomingObject {
     id,
     x,
     y,
+    previousX: x,
+    previousY: y,
     vx: (dx / length) * speed * variance,
     vy: (dy / length) * speed * variance,
     radius: 10 + Math.random() * 8,

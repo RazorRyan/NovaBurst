@@ -28,6 +28,7 @@ import {
   Particle,
   RenderSnapshot,
   ShieldSegment,
+  Shockwave,
   Star,
 } from "../types/game";
 import { clamp } from "../utils/math";
@@ -42,6 +43,9 @@ type MutableSimulationState = {
   scoreAccumulator: number;
   incomingObjects: IncomingObject[];
   particles: Particle[];
+  shockwaves: Shockwave[];
+  comboPulse: number;
+  damageFlash: number;
 };
 
 const STAR_COUNT = 36;
@@ -66,6 +70,9 @@ function createEmptySimulation(): MutableSimulationState {
     scoreAccumulator: 0,
     incomingObjects: [],
     particles: [],
+    shockwaves: [],
+    comboPulse: 0,
+    damageFlash: 0,
   };
 }
 
@@ -96,7 +103,10 @@ function createBaseSnapshot(width: number, height: number, stars: Star[]): Rende
     coreRadius: BASE_CORE_RADIUS,
     incomingObjects: [],
     particles: [],
+    shockwaves: [],
     stars,
+    comboPulse: 0,
+    damageFlash: 0,
   };
 }
 
@@ -193,6 +203,8 @@ export function useNovaBurstGame() {
         let pendingCombo = state.combo;
 
         for (const object of sim.incomingObjects) {
+          object.previousX = object.x;
+          object.previousY = object.y;
           object.x += object.vx * (deltaMs / 1000);
           object.y += object.vy * (deltaMs / 1000);
 
@@ -209,6 +221,8 @@ export function useNovaBurstGame() {
             pendingCombo += 1;
             sim.scoreAccumulator += BLOCK_SCORE_BONUS * Math.max(1, pendingCombo);
             emitBurst(sim.particles, object.x, object.y, object.colorIndex, 10, sim);
+            emitShockwave(sim.shockwaves, object.x, object.y, object.colorIndex, sim);
+            sim.comboPulse = Math.min(1, 0.35 + pendingCombo * 0.08);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
           } else if (segmentHit && !object.breachedShield) {
             object.breachedShield = true;
@@ -221,6 +235,8 @@ export function useNovaBurstGame() {
             pendingHealth -= 1;
             pendingCombo = 0;
             emitBurst(sim.particles, object.x, object.y, object.colorIndex, 14, sim);
+            emitShockwave(sim.shockwaves, object.x, object.y, object.colorIndex, sim);
+            sim.damageFlash = 1;
             triggerImpactShake(shakeX, shakeY);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
           }
@@ -237,6 +253,18 @@ export function useNovaBurstGame() {
           }))
           .filter((particle) => particle.life > 0)
           .slice(-MAX_PARTICLES);
+
+        sim.shockwaves = sim.shockwaves
+          .map((wave) => ({
+            ...wave,
+            radius: wave.radius + (wave.maxRadius - wave.radius) * 0.18,
+            life: wave.life - deltaMs,
+          }))
+          .filter((wave) => wave.life > 0)
+          .slice(-18);
+
+        sim.comboPulse = Math.max(0, sim.comboPulse - deltaMs / 360);
+        sim.damageFlash = Math.max(0, sim.damageFlash - deltaMs / 220);
 
         if (pendingCombo !== state.combo) {
           state.setCombo(pendingCombo);
@@ -270,7 +298,10 @@ export function useNovaBurstGame() {
         coreRadius,
         incomingObjects: sim.incomingObjects.map((object) => ({ ...object })),
         particles: sim.particles.map((particle) => ({ ...particle })),
+        shockwaves: sim.shockwaves.map((wave) => ({ ...wave })),
         stars: starsRef.current,
+        comboPulse: sim.comboPulse,
+        damageFlash: sim.damageFlash,
       });
 
       frameId = requestAnimationFrame(frame);
@@ -360,4 +391,24 @@ function emitBurst(
       colorIndex,
     });
   }
+}
+
+function emitShockwave(
+  waves: Shockwave[],
+  x: number,
+  y: number,
+  colorIndex: ColorIndex,
+  sim: MutableSimulationState,
+) {
+  const life = 180;
+  waves.push({
+    id: sim.particleId++,
+    x,
+    y,
+    radius: 14,
+    maxRadius: 52,
+    life,
+    maxLife: life,
+    colorIndex,
+  });
 }

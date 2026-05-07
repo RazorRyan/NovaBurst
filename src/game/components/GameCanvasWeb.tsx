@@ -41,6 +41,27 @@ function GameCanvasWebComponent({ snapshot }: GameCanvasWebProps) {
         />
       ))}
 
+      {[0.45, 0.7, 0.95].map((ratio, index) => (
+        <View
+          key={ratio}
+          style={[
+            styles.orbitRing,
+            {
+              width: snapshot.shieldRadius * (2.5 + ratio) + ((snapshot.elapsedMs * 0.01 * (index + 1)) % 18),
+              height: snapshot.shieldRadius * (2.5 + ratio) + ((snapshot.elapsedMs * 0.01 * (index + 1)) % 18),
+              borderRadius:
+                (snapshot.shieldRadius * (2.5 + ratio) + ((snapshot.elapsedMs * 0.01 * (index + 1)) % 18)) / 2,
+              left:
+                snapshot.center.x -
+                (snapshot.shieldRadius * (2.5 + ratio) + ((snapshot.elapsedMs * 0.01 * (index + 1)) % 18)) / 2,
+              top:
+                snapshot.center.y -
+                (snapshot.shieldRadius * (2.5 + ratio) + ((snapshot.elapsedMs * 0.01 * (index + 1)) % 18)) / 2,
+            },
+          ]}
+        />
+      ))}
+
       <View
         style={[
           styles.coreGlow,
@@ -120,32 +141,50 @@ function GameCanvasWebComponent({ snapshot }: GameCanvasWebProps) {
       })}
 
       {snapshot.incomingObjects.map((object) => (
-        <View
-          key={object.id}
-          style={[
-            styles.objectGlow,
-            {
-              width: object.radius * 4.4,
-              height: object.radius * 4.4,
-              borderRadius: object.radius * 2.2,
-              left: object.x - object.radius * 2.2,
-              top: object.y - object.radius * 2.2,
-              backgroundColor: energyColors[object.colorIndex],
-            },
-          ]}
-        >
+        <View key={object.id}>
           <View
             style={[
-              styles.objectCore,
+              styles.trail,
               {
-                width: object.radius * 2,
-                height: object.radius * 2,
-                borderRadius: object.radius,
+                width: Math.max(8, Math.hypot(object.x - object.previousX, object.y - object.previousY)),
+                height: Math.max(2, object.radius * 0.4),
+                left: object.previousX,
+                top: object.previousY,
+                backgroundColor: energyColors[object.colorIndex],
+                transform: [
+                  {
+                    rotate: `${(Math.atan2(object.y - object.previousY, object.x - object.previousX) * 180) / Math.PI}deg`,
+                  },
+                ],
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.objectGlow,
+              {
+                width: object.radius * 4.4,
+                height: object.radius * 4.4,
+                borderRadius: object.radius * 2.2,
+                left: object.x - object.radius * 2.2,
+                top: object.y - object.radius * 2.2,
                 backgroundColor: energyColors[object.colorIndex],
               },
             ]}
           >
-            <View style={styles.objectHighlight} />
+            <View
+              style={[
+                styles.objectCore,
+                {
+                  width: object.radius * 2,
+                  height: object.radius * 2,
+                  borderRadius: object.radius,
+                  backgroundColor: energyColors[object.colorIndex],
+                },
+              ]}
+            >
+              <View style={styles.objectHighlight} />
+            </View>
           </View>
         </View>
       ))}
@@ -171,6 +210,46 @@ function GameCanvasWebComponent({ snapshot }: GameCanvasWebProps) {
           />
         );
       })}
+
+      {snapshot.shockwaves.map((wave) => {
+        const alpha = wave.life / wave.maxLife;
+        return (
+          <View
+            key={wave.id}
+            style={[
+              styles.shockwave,
+              {
+                width: wave.radius * 2,
+                height: wave.radius * 2,
+                borderRadius: wave.radius,
+                left: wave.x - wave.radius,
+                top: wave.y - wave.radius,
+                borderColor: energyColors[wave.colorIndex],
+                opacity: alpha * 0.65,
+              },
+            ]}
+          />
+        );
+      })}
+
+      {snapshot.comboPulse > 0 ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.comboWash,
+            { opacity: snapshot.comboPulse * 0.32 },
+          ]}
+        />
+      ) : null}
+      {snapshot.damageFlash > 0 ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.damageWash,
+            { opacity: snapshot.damageFlash * 0.26 },
+          ]}
+        />
+      ) : null}
     </View>
   );
 }
@@ -223,6 +302,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
+  orbitRing: {
+    position: "absolute",
+    borderWidth: 1,
+    borderColor: cosmicPalette.ring,
+  },
   segmentGlow: {
     position: "absolute",
     alignItems: "center",
@@ -247,6 +331,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  trail: {
+    position: "absolute",
+    opacity: 0.45,
+  },
   objectHighlight: {
     width: 5,
     height: 5,
@@ -258,5 +346,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     shadowOpacity: 0.35,
     shadowRadius: 10,
+  },
+  shockwave: {
+    position: "absolute",
+    borderWidth: 3,
+  },
+  comboWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(89,246,255,0.18)",
+  },
+  damageWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,95,116,0.28)",
   },
 });

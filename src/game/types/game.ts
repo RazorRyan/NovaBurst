@@ -11,6 +11,8 @@ export type IncomingObject = {
   id: number;
   x: number;
   y: number;
+  previousX: number;
+  previousY: number;
   vx: number;
   vy: number;
   radius: number;
@@ -27,6 +29,17 @@ export type Particle = {
   life: number;
   maxLife: number;
   radius: number;
+  colorIndex: ColorIndex;
+};
+
+export type Shockwave = {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  life: number;
+  maxLife: number;
   colorIndex: ColorIndex;
 };
 
@@ -56,5 +69,8 @@ export type RenderSnapshot = {
   coreRadius: number;
   incomingObjects: IncomingObject[];
   particles: Particle[];
+  shockwaves: Shockwave[];
   stars: Star[];
+  comboPulse: number;
+  damageFlash: number;
 };

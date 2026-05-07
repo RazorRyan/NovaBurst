@@ -30,6 +30,8 @@ export function GameScreen() {
     ],
   }));
 
+  const dangerOpacity = 1 - health / 5;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Animated.View style={[styles.stage, animatedStyle]}>
@@ -50,6 +52,13 @@ export function GameScreen() {
           <Text style={styles.hintText}>Tap left to rotate counterclockwise</Text>
           <Text style={styles.hintText}>Tap right to rotate clockwise</Text>
         </View>
+
+        {dangerOpacity > 0 ? (
+          <View
+            pointerEvents="none"
+            style={[styles.dangerVignette, { opacity: dangerOpacity * 0.45 }]}
+          />
+        ) : null}
 
         <View style={styles.touchLayer}>
           <Pressable style={styles.touchHalf} onPress={rotateLeft} />
@@ -101,5 +110,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     overflow: "hidden",
+  },
+  dangerVignette: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,80,106,0.18)",
   },
 });

@@ -18,3 +18,4 @@
 - Added Skia rendering, Reanimated shield motion and screen shake, Zustand run state, spawn scaling, shield matching, combo scoring, haptic feedback, and restart flow.
 - Assumption: high score currently persists only in memory for the prototype; local MMKV persistence is deferred until a later prompt.
 - Added a web-safe gameplay renderer fallback so the prototype runs in browser even when Skia path creation is unavailable during web startup.
+- Executed Prompt 03 by deepening the render layer with enemy trails, shockwaves, combo and damage screen washes, orbital background rings, and stronger neon ambience across native and web renderers.
