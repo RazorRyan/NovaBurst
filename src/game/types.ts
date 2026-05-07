@@ -60,6 +60,7 @@ export type GameSnapshot = {
   shieldRadius: number;
   coreRadius: number;
   activeColor: ShieldColorKey;
+  previousActiveColor: ShieldColorKey;
   activeColorIndex: number;
   balls: BallEntity[];
   particles: ParticleEntity[];
@@ -67,6 +68,7 @@ export type GameSnapshot = {
   stars: Star[];
   damageFlash: number;
   shieldPulse: number;
+  switchFlash: number;
   invinciblePulse: number;
   lowHealthPulse: number;
 };

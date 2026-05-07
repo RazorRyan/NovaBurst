@@ -35,3 +35,6 @@
 - Executed Prompt 09 by rebuilding the difficulty curve into phased onboarding windows: `0–20s` one-color warmup, `20–45s` two-color ramp, `45–90s` moderate escalation, and `90s+` progressive survival pressure.
 - Reduced early overwhelm by slowing initial spawn and movement speeds, delaying later color unlocks and hazard introduction, and capping simultaneous active balls more aggressively during the opening phases.
 - Added snapshot-level color-count guidance so the on-screen coaching now matches the active difficulty phase instead of implying a multi-color start from the first seconds.
+- Executed Prompt 10 by upgrading color switching with a lightweight transition flash, previous-color echo ring, stronger shield pulse, and core glow response so successful switches read instantly.
+- Tightened switch feel by suppressing fake switch feedback during the one-color warmup phase, which prevents taps from buzzing and flashing when no actual color change is possible yet.
+- Architecture decision: kept the new game-feel pass inside the existing ref-driven simulation snapshot with a single short-lived `switchFlash` value, preserving responsiveness without adding heavier animation state.

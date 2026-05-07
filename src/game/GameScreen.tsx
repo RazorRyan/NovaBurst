@@ -100,19 +100,35 @@ export function GameScreen() {
               style={[styles.damageOverlay, { opacity: snapshot.damageFlash * 0.28 }]}
             />
           ) : null}
+          {snapshot.switchFlash > 0 ? (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.switchOverlay,
+                {
+                  opacity: snapshot.switchFlash * 0.09,
+                  backgroundColor: shieldColorMap[snapshot.activeColor],
+                },
+              ]}
+            />
+          ) : null}
 
           <Core
             size={snapshot.coreRadius}
             x={snapshot.center.x}
             y={snapshot.center.y}
             invinciblePulse={snapshot.invinciblePulse}
+            activeColor={snapshot.activeColor}
+            switchFlash={snapshot.switchFlash}
           />
           <ShieldIndicator
             colorKey={snapshot.activeColor}
+            previousColorKey={snapshot.previousActiveColor}
             radius={snapshot.shieldRadius}
             x={snapshot.center.x}
             y={snapshot.center.y}
             pulse={snapshot.shieldPulse}
+            switchFlash={snapshot.switchFlash}
           />
 
           {snapshot.balls.map((ball) => (
@@ -283,6 +299,9 @@ const styles = StyleSheet.create({
   lowHealthOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(255, 186, 72, 0.18)",
+  },
+  switchOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   colorGuide: {
     position: "absolute",

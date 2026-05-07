@@ -30,11 +30,13 @@ type SimState = {
   popupId: number;
   scoreAccumulator: number;
   activeColorIndex: number;
+  previousColorIndex: number;
   balls: BallEntity[];
   particles: ParticleEntity[];
   scorePopups: ScorePopup[];
   damageFlash: number;
   shieldPulse: number;
+  switchFlash: number;
 };
 
 const STAR_COUNT = 32;
@@ -60,11 +62,13 @@ function createSimState(): SimState {
     popupId: 0,
     scoreAccumulator: 0,
     activeColorIndex: 0,
+    previousColorIndex: 0,
     balls: [],
     particles: [],
     scorePopups: [],
     damageFlash: 0,
     shieldPulse: 0,
+    switchFlash: 0,
   };
 }
 
@@ -78,6 +82,7 @@ function createSnapshot(width: number, height: number, stars: Star[]): GameSnaps
     shieldRadius: Math.min(GAME_CONFIG.shieldRadius, Math.min(width, height) * 0.24),
     coreRadius: GAME_CONFIG.coreRadius,
     activeColor: SHIELD_COLORS[0],
+    previousActiveColor: SHIELD_COLORS[0],
     activeColorIndex: 0,
     balls: [],
     particles: [],
@@ -85,6 +90,7 @@ function createSnapshot(width: number, height: number, stars: Star[]): GameSnaps
     stars,
     damageFlash: 0,
     shieldPulse: 0,
+    switchFlash: 0,
     invinciblePulse: 0,
     lowHealthPulse: 0,
   };
@@ -147,6 +153,7 @@ export function useGameLoop() {
       const difficulty = getDifficultyState(sim.elapsedMs, Math.round(sim.scoreAccumulator));
       const shieldRadius = Math.min(GAME_CONFIG.shieldRadius, Math.min(width, height) * 0.24);
       const activeColor = SHIELD_COLORS[sim.activeColorIndex];
+      const previousActiveColor = SHIELD_COLORS[sim.previousColorIndex];
 
       if (store.gameState === "running") {
         sim.elapsedMs += deltaMs;
@@ -213,6 +220,7 @@ export function useGameLoop() {
         sim.invincibilityMs = Math.max(0, sim.invincibilityMs - deltaMs);
         sim.damageFlash = Math.max(0, sim.damageFlash - deltaMs / 220);
         sim.shieldPulse = Math.max(0, sim.shieldPulse - deltaMs / 180);
+        sim.switchFlash = Math.max(0, sim.switchFlash - deltaMs / 240);
 
         sim.particles = sim.particles
           .map((particle) => ({
@@ -266,6 +274,7 @@ export function useGameLoop() {
         shieldRadius,
         coreRadius: GAME_CONFIG.coreRadius,
         activeColor,
+        previousActiveColor,
         activeColorIndex: sim.activeColorIndex,
         balls: sim.balls.map((ball) => ({ ...ball })),
         particles: sim.particles.map((particle) => ({ ...particle })),
@@ -273,6 +282,7 @@ export function useGameLoop() {
         stars: starsRef.current,
         damageFlash: sim.damageFlash,
         shieldPulse: sim.shieldPulse,
+        switchFlash: sim.switchFlash,
         invinciblePulse,
         lowHealthPulse,
       });
@@ -294,8 +304,17 @@ export function useGameLoop() {
     }
     const sim = simRef.current;
     const difficulty = getDifficultyState(sim.elapsedMs, Math.round(sim.scoreAccumulator));
-    sim.activeColorIndex = (sim.activeColorIndex + 1) % difficulty.colorCount;
-    sim.shieldPulse = 1;
+    if (difficulty.colorCount <= 1) {
+      return;
+    }
+    const nextColorIndex = (sim.activeColorIndex + 1) % difficulty.colorCount;
+    if (nextColorIndex === sim.activeColorIndex) {
+      return;
+    }
+    sim.previousColorIndex = sim.activeColorIndex;
+    sim.activeColorIndex = nextColorIndex;
+    sim.shieldPulse = 1.15;
+    sim.switchFlash = 1;
     Haptics.selectionAsync().catch(() => undefined);
   }, []);
 
