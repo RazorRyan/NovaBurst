@@ -20,3 +20,5 @@
 - Added a web-safe gameplay renderer fallback so the prototype runs in browser even when Skia path creation is unavailable during web startup.
 - Executed Prompt 03 by deepening the render layer with enemy trails, shockwaves, combo and damage screen washes, orbital background rings, and stronger neon ambience across native and web renderers.
 - Executed Prompt 04 by upgrading touch control feel with press-and-hold rotation, immediate tap bursts, animated touch-zone feedback, and a dedicated input hook that keeps fast control state outside React rerender loops.
+- Executed Prompt 05 by adding persisted local progression with Nova Credits, three lightweight upgrades, upgrade effects applied to the core loop, and a compact post-run progression tray.
+- Architecture decision: used persisted Zustand state with AsyncStorage for Expo-compatible local storage instead of MMKV so the progression system stays testable in the current Expo workflow.

@@ -7,6 +7,7 @@ type GameOverOverlayProps = {
   visible: boolean;
   score: number;
   highScore: number;
+  creditsEarned: number;
   onRestart: () => void;
 };
 
@@ -14,6 +15,7 @@ function GameOverOverlayComponent({
   visible,
   score,
   highScore,
+  creditsEarned,
   onRestart,
 }: GameOverOverlayProps) {
   if (!visible) {
@@ -27,6 +29,7 @@ function GameOverOverlayComponent({
         <Text style={styles.title}>Run over</Text>
         <Text style={styles.score}>Final score: {score}</Text>
         <Text style={styles.best}>Best score: {highScore}</Text>
+        <Text style={styles.credits}>+{creditsEarned} Nova Credits</Text>
 
         <Pressable style={styles.button} onPress={onRestart}>
           <Text style={styles.buttonText}>Restart run</Text>
@@ -79,6 +82,11 @@ const styles = StyleSheet.create({
     color: cosmicPalette.textDim,
     fontSize: 15,
     fontWeight: "600",
+  },
+  credits: {
+    color: cosmicPalette.core,
+    fontSize: 14,
+    fontWeight: "700",
   },
   button: {
     marginTop: 8,

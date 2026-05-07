@@ -1,17 +1,25 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { MAX_HEALTH } from "../systems/gameConstants";
 import { cosmicPalette, energyColors } from "../utils/palette";
 
 type GameHudProps = {
   score: number;
   combo: number;
   health: number;
+  maxHealth: number;
   highScore: number;
+  credits: number;
 };
 
-function GameHudComponent({ score, combo, health, highScore }: GameHudProps) {
+function GameHudComponent({
+  score,
+  combo,
+  health,
+  maxHealth,
+  highScore,
+  credits,
+}: GameHudProps) {
   return (
     <View pointerEvents="none" style={styles.root}>
       <View style={styles.topBar}>
@@ -29,18 +37,23 @@ function GameHudComponent({ score, combo, health, highScore }: GameHudProps) {
         </View>
 
         <View style={styles.sideCard}>
-          <Text style={styles.label}>Core</Text>
-          <Text style={styles.value}>{health}/{MAX_HEALTH}</Text>
+          <Text style={styles.label}>Credits</Text>
+          <Text style={styles.value}>{credits}</Text>
         </View>
       </View>
 
-      <View style={styles.legend}>
-        {Object.values(energyColors).map((color, index) => (
-          <View key={color} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: color }]} />
-            <Text style={styles.legendText}>Arc {index + 1}</Text>
-          </View>
-        ))}
+      <View style={styles.bottomRow}>
+        <View style={styles.legend}>
+          {Object.values(energyColors).map((color, index) => (
+            <View key={color} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: color }]} />
+              <Text style={styles.legendText}>Arc {index + 1}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={styles.healthPill}>
+          <Text style={styles.healthText}>Core {health}/{maxHealth}</Text>
+        </View>
       </View>
     </View>
   );
@@ -107,7 +120,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   legend: {
-    alignSelf: "center",
     flexDirection: "row",
     gap: 10,
     paddingHorizontal: 14,
@@ -116,6 +128,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(7, 12, 28, 0.72)",
     borderWidth: 1,
     borderColor: cosmicPalette.border,
+  },
+  bottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
   },
   legendItem: {
     flexDirection: "row",
@@ -131,5 +149,18 @@ const styles = StyleSheet.create({
     color: cosmicPalette.textDim,
     fontSize: 11,
     fontWeight: "600",
+  },
+  healthPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(7, 12, 28, 0.72)",
+    borderWidth: 1,
+    borderColor: cosmicPalette.border,
+  },
+  healthText: {
+    color: cosmicPalette.text,
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

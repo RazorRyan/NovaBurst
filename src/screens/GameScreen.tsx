@@ -5,6 +5,7 @@ import { GameCanvas } from "../game/components/GameCanvas";
 import { GameCanvasWeb } from "../game/components/GameCanvasWeb";
 import { GameHud } from "../game/components/GameHud";
 import { GameOverOverlay } from "../game/components/GameOverOverlay";
+import { ProgressionTray } from "../game/components/ProgressionTray";
 import { useNovaBurstGame } from "../game/hooks/useNovaBurstGame";
 import { useTouchControls } from "../game/hooks/useTouchControls";
 import { cosmicPalette } from "../game/utils/palette";
@@ -16,6 +17,11 @@ export function GameScreen() {
     combo,
     health,
     highScore,
+    credits,
+    totalRuns,
+    lastRunCredits,
+    upgrades,
+    progressionEffects,
     gameState,
     rotateLeft,
     rotateRight,
@@ -25,6 +31,7 @@ export function GameScreen() {
     shakeY,
     leftPress,
     rightPress,
+    buyUpgrade,
   } = useNovaBurstGame();
 
   const controls = useTouchControls({
@@ -50,7 +57,7 @@ export function GameScreen() {
     transform: [{ scale: 0.98 + rightPress.value * 0.02 }],
   }));
 
-  const dangerOpacity = 1 - health / 5;
+  const dangerOpacity = 1 - health / progressionEffects.maxHealth;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -65,7 +72,9 @@ export function GameScreen() {
           score={score}
           combo={combo}
           health={health}
+          maxHealth={progressionEffects.maxHealth}
           highScore={highScore}
+          credits={credits}
         />
 
         <View style={styles.controlHints} pointerEvents="none">
@@ -109,8 +118,17 @@ export function GameScreen() {
           visible={gameState === "gameOver"}
           score={score}
           highScore={highScore}
+          creditsEarned={lastRunCredits}
           onRestart={restart}
         />
+        {gameState === "gameOver" ? (
+          <ProgressionTray
+            credits={credits}
+            totalRuns={totalRuns}
+            upgrades={upgrades}
+            onBuyUpgrade={buyUpgrade}
+          />
+        ) : null}
       </Animated.View>
     </SafeAreaView>
   );

@@ -11,19 +11,25 @@ import {
 import {
   BASE_CORE_RADIUS,
   BASE_SHIELD_RADIUS,
-  BLOCK_SCORE_BONUS,
   HOLD_ROTATION_SPEED,
-  MAX_HEALTH,
   MAX_PARTICLES,
   SCORE_PER_SECOND,
   SHIELD_ROTATION_DURATION_MS,
   SHIELD_ROTATION_STEP,
   SHIELD_SEGMENT_GAP,
-  SHIELD_SEGMENT_SWEEP,
   TAP_ROTATION_BURST,
 } from "../systems/gameConstants";
 import { findShieldSegmentHit, hasReachedCore } from "../systems/collisions";
-import { createIncomingObject, getDifficultyProgress, getSpawnIntervalMs } from "../systems/spawn";
+import {
+  getBlockBonusForUpgrades,
+  getShieldSweepForUpgrades,
+} from "../systems/progression";
+import {
+  createIncomingObject,
+  getDifficultyProgress,
+  getSpawnIntervalMs,
+} from "../systems/spawn";
+import { useGameStore } from "../state/gameStore";
 import {
   ColorIndex,
   IncomingObject,
@@ -34,7 +40,6 @@ import {
   Star,
 } from "../types/game";
 import { clamp } from "../utils/math";
-import { useGameStore } from "../state/gameStore";
 
 type MutableSimulationState = {
   elapsedMs: number;
@@ -78,20 +83,25 @@ function createEmptySimulation(): MutableSimulationState {
   };
 }
 
-function createShieldSegments(angle: number): ShieldSegment[] {
+function createShieldSegments(angle: number, shieldSweep: number): ShieldSegment[] {
   const segments: ShieldSegment[] = [];
   const spacing = (Math.PI * 2) / 3;
   for (let index = 0 as ColorIndex; index < 3; index = (index + 1) as ColorIndex) {
     segments.push({
       colorIndex: index,
       startAngle: angle + index * spacing + SHIELD_SEGMENT_GAP / 2,
-      sweepAngle: SHIELD_SEGMENT_SWEEP,
+      sweepAngle: shieldSweep,
     });
   }
   return segments;
 }
 
-function createBaseSnapshot(width: number, height: number, stars: Star[]): RenderSnapshot {
+function createBaseSnapshot(
+  width: number,
+  height: number,
+  stars: Star[],
+  shieldSweep: number,
+): RenderSnapshot {
   const center = { x: width / 2, y: height / 2 };
   return {
     width,
@@ -99,7 +109,7 @@ function createBaseSnapshot(width: number, height: number, stars: Star[]): Rende
     center,
     elapsedMs: 0,
     shieldAngle: 0,
-    shieldSegments: createShieldSegments(0),
+    shieldSegments: createShieldSegments(0, shieldSweep),
     shieldRadius: Math.min(BASE_SHIELD_RADIUS, Math.min(width, height) * 0.24),
     shieldThickness: 14,
     coreRadius: BASE_CORE_RADIUS,
@@ -132,7 +142,12 @@ export function useNovaBurstGame() {
   const leftPress = useSharedValue(0);
   const rightPress = useSharedValue(0);
   const [snapshot, setSnapshot] = useState<RenderSnapshot>(() =>
-    createBaseSnapshot(Math.max(width, 1), Math.max(height, 1), createStars(Math.max(width, 1), Math.max(height, 1))),
+    createBaseSnapshot(
+      Math.max(width, 1),
+      Math.max(height, 1),
+      createStars(Math.max(width, 1), Math.max(height, 1)),
+      getShieldSweepForUpgrades(useGameStore.getState().upgrades),
+    ),
   );
 
   const score = useGameStore((state) => state.score);
@@ -140,17 +155,31 @@ export function useNovaBurstGame() {
   const health = useGameStore((state) => state.health);
   const gameState = useGameStore((state) => state.gameState);
   const highScore = useGameStore((state) => state.highScore);
+  const credits = useGameStore((state) => state.credits);
+  const totalRuns = useGameStore((state) => state.totalRuns);
+  const bestCombo = useGameStore((state) => state.bestCombo);
+  const lastRunCredits = useGameStore((state) => state.lastRunCredits);
+  const upgrades = useGameStore((state) => state.upgrades);
+  const buyUpgrade = useGameStore((state) => state.buyUpgrade);
 
   const initialize = useCallback(() => {
     const nextWidth = Math.max(width, 1);
     const nextHeight = Math.max(height, 1);
     const stars = createStars(nextWidth, nextHeight);
+    const currentUpgrades = useGameStore.getState().upgrades;
     starsRef.current = stars;
     simRef.current = createEmptySimulation();
     lastFrameRef.current = 0;
     shieldAngle.value = 0;
     useGameStore.getState().resetRun();
-    setSnapshot(createBaseSnapshot(nextWidth, nextHeight, stars));
+    setSnapshot(
+      createBaseSnapshot(
+        nextWidth,
+        nextHeight,
+        stars,
+        getShieldSweepForUpgrades(currentUpgrades),
+      ),
+    );
   }, [height, shieldAngle, width]);
 
   useEffect(() => {
@@ -175,6 +204,9 @@ export function useNovaBurstGame() {
 
       const sim = simRef.current;
       const state = useGameStore.getState();
+      const progressionEffects = state.getProgressionEffects();
+      const shieldSweep = getShieldSweepForUpgrades(state.upgrades);
+      const blockBonus = getBlockBonusForUpgrades(state.upgrades);
       const center = { x: width / 2, y: height / 2 };
       const shieldRadius = Math.min(BASE_SHIELD_RADIUS, Math.min(width, height) * 0.24);
       const coreRadius = BASE_CORE_RADIUS;
@@ -184,7 +216,11 @@ export function useNovaBurstGame() {
         sim.elapsedMs += deltaMs;
         sim.spawnTimerMs += deltaMs;
         sim.uiTimerMs += deltaMs;
-        sim.scoreAccumulator += (deltaMs / 1000) * SCORE_PER_SECOND * (1 + Math.max(0, state.combo - 1) * 0.18);
+        sim.scoreAccumulator +=
+          (deltaMs / 1000) *
+          SCORE_PER_SECOND *
+          progressionEffects.scoreMultiplier *
+          (1 + Math.max(0, state.combo - 1) * 0.18);
 
         const difficulty = getDifficultyProgress(sim.elapsedMs);
         const nextSpawnInterval = getSpawnIntervalMs(sim.elapsedMs);
@@ -202,7 +238,7 @@ export function useNovaBurstGame() {
           );
         }
 
-        const segments = createShieldSegments(shieldAngle.value);
+        const segments = createShieldSegments(shieldAngle.value, shieldSweep);
         const blockedObjects = new Set<number>();
         let pendingHealth = state.health;
         let pendingCombo = state.combo;
@@ -228,7 +264,7 @@ export function useNovaBurstGame() {
           if (segmentHit && segmentHit.colorIndex === object.colorIndex) {
             blockedObjects.add(object.id);
             pendingCombo += 1;
-            sim.scoreAccumulator += BLOCK_SCORE_BONUS * Math.max(1, pendingCombo);
+            sim.scoreAccumulator += blockBonus * Math.max(1, pendingCombo);
             emitBurst(sim.particles, object.x, object.y, object.colorIndex, 10, sim);
             emitShockwave(sim.shockwaves, object.x, object.y, object.colorIndex, sim);
             sim.comboPulse = Math.min(1, 0.35 + pendingCombo * 0.08);
@@ -280,12 +316,12 @@ export function useNovaBurstGame() {
         }
 
         if (pendingHealth !== state.health) {
-          const clampedHealth = clamp(pendingHealth, 0, MAX_HEALTH);
+          const clampedHealth = clamp(pendingHealth, 0, progressionEffects.maxHealth);
           state.setHealth(clampedHealth);
           if (clampedHealth <= 0) {
             const finalScore = Math.round(sim.scoreAccumulator);
             state.setScore(finalScore);
-            state.registerGameOver(finalScore);
+            state.registerGameOver(finalScore, pendingCombo);
           }
         }
 
@@ -301,7 +337,7 @@ export function useNovaBurstGame() {
         center,
         elapsedMs: sim.elapsedMs,
         shieldAngle: shieldAngle.value,
-        shieldSegments: createShieldSegments(shieldAngle.value),
+        shieldSegments: createShieldSegments(shieldAngle.value, shieldSweep),
         shieldRadius,
         shieldThickness,
         coreRadius,
@@ -365,6 +401,12 @@ export function useNovaBurstGame() {
       combo,
       health,
       highScore,
+      credits,
+      totalRuns,
+      bestCombo,
+      lastRunCredits,
+      upgrades,
+      progressionEffects: useGameStore.getState().getProgressionEffects(),
       gameState,
       rotateLeft,
       rotateRight,
@@ -374,12 +416,17 @@ export function useNovaBurstGame() {
       shakeY,
       leftPress,
       rightPress,
+      buyUpgrade,
     }),
     [
+      bestCombo,
+      buyUpgrade,
       combo,
+      credits,
       gameState,
       health,
       highScore,
+      lastRunCredits,
       leftPress,
       restart,
       rightPress,
@@ -390,6 +437,8 @@ export function useNovaBurstGame() {
       shakeX,
       shakeY,
       snapshot,
+      totalRuns,
+      upgrades,
     ],
   );
 }
