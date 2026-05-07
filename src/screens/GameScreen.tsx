@@ -1,7 +1,8 @@
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 
 import { GameCanvas } from "../game/components/GameCanvas";
+import { GameCanvasWeb } from "../game/components/GameCanvasWeb";
 import { GameHud } from "../game/components/GameHud";
 import { GameOverOverlay } from "../game/components/GameOverOverlay";
 import { useNovaBurstGame } from "../game/hooks/useNovaBurstGame";
@@ -32,7 +33,11 @@ export function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Animated.View style={[styles.stage, animatedStyle]}>
-        <GameCanvas snapshot={snapshot} />
+        {Platform.OS === "web" ? (
+          <GameCanvasWeb snapshot={snapshot} />
+        ) : (
+          <GameCanvas snapshot={snapshot} />
+        )}
 
         <GameHud
           score={score}

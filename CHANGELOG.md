@@ -17,3 +17,4 @@
 - Added a modular loop split across systems, hooks, store, render components, and typed gameplay entities to keep hot-path logic outside general React UI state.
 - Added Skia rendering, Reanimated shield motion and screen shake, Zustand run state, spawn scaling, shield matching, combo scoring, haptic feedback, and restart flow.
 - Assumption: high score currently persists only in memory for the prototype; local MMKV persistence is deferred until a later prompt.
+- Added a web-safe gameplay renderer fallback so the prototype runs in browser even when Skia path creation is unavailable during web startup.
