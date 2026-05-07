@@ -11,3 +11,9 @@
 - Documented the expected core gameplay packages in setup-facing docs instead of installing dependencies.
 - Removed the Reanimated Babel plugin from setup config so the base Expo scaffold can bundle before gameplay dependencies are added.
 - Added a project `.gitignore` for Expo, React Native, TypeScript, local env files, and machine-specific artifacts.
+- Expanded `.gitignore` with Expo local files, package manager caches, editor swap files, and mobile signing credential ignores.
+- Aligned Prompt 02 native package versions with Expo SDK 54 compatibility and added `react-native-worklets` to avoid runtime TurboModule issues.
+- Executed Prompt 02 by replacing the setup placeholder with a one-screen NovaBurst gameplay prototype in `src/game` and `src/screens/GameScreen.tsx`.
+- Added a modular loop split across systems, hooks, store, render components, and typed gameplay entities to keep hot-path logic outside general React UI state.
+- Added Skia rendering, Reanimated shield motion and screen shake, Zustand run state, spawn scaling, shield matching, combo scoring, haptic feedback, and restart flow.
+- Assumption: high score currently persists only in memory for the prototype; local MMKV persistence is deferred until a later prompt.

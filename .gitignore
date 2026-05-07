@@ -21,6 +21,7 @@ pnpm-debug.log*
 # local environment
 .env
 .env.*
+.env*.local
 
 # TypeScript
 *.tsbuildinfo
@@ -28,13 +29,32 @@ pnpm-debug.log*
 # coverage
 coverage/
 
+# package manager caches
+.npm/
+.pnpm-store/
+
 # IDE and OS files
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+*.swp
+*.swo
 
 # local tool caches
 .cache/
 tmp/
 temp/
+
+# Expo and EAS local files
+expo-env.d.ts
+.eas/
+
+# mobile signing and secrets
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist

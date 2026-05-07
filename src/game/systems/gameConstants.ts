@@ -1,0 +1,14 @@
+export const MAX_HEALTH = 5;
+export const SHIELD_ROTATION_STEP = Math.PI / 7;
+export const SHIELD_ROTATION_DURATION_MS = 110;
+export const SHIELD_SEGMENT_SWEEP = Math.PI / 2.8;
+export const SHIELD_SEGMENT_GAP = Math.PI / 12;
+export const BASE_SHIELD_RADIUS = 110;
+export const BASE_CORE_RADIUS = 32;
+export const BASE_SPAWN_INTERVAL_MS = 950;
+export const MIN_SPAWN_INTERVAL_MS = 260;
+export const BASE_OBJECT_SPEED = 85;
+export const MAX_OBJECT_SPEED = 220;
+export const SCORE_PER_SECOND = 14;
+export const BLOCK_SCORE_BONUS = 25;
+export const MAX_PARTICLES = 120;
